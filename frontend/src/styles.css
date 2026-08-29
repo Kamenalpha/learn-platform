@@ -1,0 +1,62 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+  font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Microsoft YaHei', Arial, sans-serif;
+  background: #f5f7fa;
+}
+
+/* 预格式化文本(问答回答/考点生成结果) */
+.pre-wrap {
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.7;
+}
+
+/* 问答气泡 */
+.bubble {
+  max-width: 78%;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 14px;
+}
+
+.bubble.user {
+  background: #409eff;
+  color: #fff;
+  border-top-right-radius: 2px;
+}
+
+.bubble.assistant {
+  background: #fff;
+  border: 1px solid #e4e7ed;
+  border-top-left-radius: 2px;
+}
+
+/* 引用来源卡片 */
+.source-card {
+  border: 1px dashed #dcdfe6;
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-top: 6px;
+  font-size: 12px;
+  color: #606266;
+  background: #fafafa;
+  cursor: pointer;
+}
+
+.source-card:hover {
+  border-color: #409eff;
+  color: #409eff;
+}
+
+.page-card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 20px;
+}

@@ -1,0 +1,28 @@
+# Java
+target/
+*.class
+*.jar
+!.mvn/wrapper/maven-wrapper.jar
+
+# Node
+node_modules/
+dist/
+*.local
+
+# 运行时数据
+uploads/
+data/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
+
+# 日志与其他
+logs/
+*.log
+.env
+.DS_Store

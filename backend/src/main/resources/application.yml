@@ -1,0 +1,69 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: rag-edu
+
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://${DB_HOST:localhost}:3306/rag_edu?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: ${DB_USER:root}
+    password: ${DB_PASSWORD:root123456}
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 200MB
+
+  ai:
+    openai:
+      # 生成大模型:默认 DeepSeek(OpenAI兼容协议)
+      # 换通义千问: LLM_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode  LLM_MODEL=qwen-plus
+      base-url: ${LLM_BASE_URL:https://api.deepseek.com}
+      api-key: ${LLM_API_KEY:sk-fill-your-key}
+      chat:
+        options:
+          model: ${LLM_MODEL:deepseek-chat}
+          temperature: 0.7
+      # 嵌入模型:默认 SiliconFlow 托管的 bge-small-zh-v1.5(512维,中文效果好)
+      # 换通义: EMBED_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode  EMBED_MODEL=text-embedding-v3
+      embedding:
+        base-url: ${EMBED_BASE_URL:https://api.siliconflow.cn}
+        api-key: ${EMBED_API_KEY:sk-fill-your-key}
+        options:
+          model: ${EMBED_MODEL:BAAI/bge-small-zh-v1.5}
+    vectorstore:
+      chroma:
+        client:
+          host: ${CHROMA_HOST:http://localhost}
+          port: ${CHROMA_PORT:8000}
+        collection-name: rag_edu_knowledge
+        initialize-schema: true   # 启动时自动创建 Collection
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl   # 开发期打印SQL,论文截图方便
+  global-config:
+    banner: false
+
+# RAG 业务参数(运行时可在管理后台"知识库管理"中覆盖部分参数)
+rag:
+  upload-dir: ./uploads      # 课件文件存储目录
+  chunk-size: 500            # 递归字符分块:每块目标字符数
+  chunk-overlap: 50          # 相邻块重叠字符数
+  embed-batch-size: 16       # 向量嵌入批量大小
+  default-top-k: 5           # 默认召回数量
+  default-threshold: 0.5     # 默认相似度阈值
+  jwt-secret: rag-edu-graduation-project-jwt-secret-please-change-in-prod
+  jwt-expire-hours: 72
+
+logging:
+  level:
+    org.springframework.ai: INFO
