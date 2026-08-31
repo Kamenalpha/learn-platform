@@ -1,126 +1,126 @@
-# 基于 RAG 的数媒专业知识库问答系统
+# 通用多学科智能学习平台 (Graduation Project)
 
-面向数字媒体技术专业的知识库问答平台:上传课程课件(PDF / Word / PPT / TXT),系统解析、分块、向量化入库;学生用自然语言提问,系统从知识库中召回相关知识块,交由大模型生成**带引用来源(文档名/页码,可溯源)**的回答,并提供考点生成、知识图谱、学习历史等学习辅助功能。
+面向多学科的**一站式智能学习平台**:用户上传自己的教材并自主分类,定制 AI 助手学习,制定学习计划,在社区交流,做模拟测试(自动出题 + AI 评分),并用 AI 辅助完成课程设计项目——形成"学-练-测-交流-做项目"的完整学习闭环。核心引擎为 **RAG + 大模型**,回答带**可溯源引用**。
 
-> 毕业设计项目骨架,后端 Spring Boot + Spring AI,前端 Vue3,符合论文大纲"系统总体设计"中的技术选型。
+> 技术架构:后端 Spring Boot + Spring AI,前端 Vue3 + Element Plus(响应式,PC/移动一套代码),数据库 MySQL + Chroma(向量) + Redis。
 
 ## 一、技术栈
 
 | 层级 | 选型 |
 |------|------|
-| 后端框架 | Spring Boot 3.5.16(Java 17) |
-| AI 编排 | Spring AI 1.1.8(OpenAI 兼容协议接 DeepSeek / 通义千问) |
-| 向量数据库 | Chroma 1.0(轻量易部署,localhost:8000) |
-| 数据库 | MySQL 8.0 + MyBatis-Plus |
-| 缓存 | Redis 7(对话上下文、检索参数、图谱缓存) |
-| 文档解析 | Apache PDFBox + Apache POI(保留页码用于溯源) |
-| 文本分块 | 递归字符分割(默认 500 字符 / 重叠 50,可后台调整) |
-| 生成大模型 | 默认 DeepSeek `deepseek-chat`,可换通义千问 `qwen-plus` |
-| 嵌入模型 | 默认 SiliconFlow 托管 `BAAI/bge-small-zh-v1.5`(512 维,可换 DashScope `text-embedding-v3`) |
+| 后端框架 | Spring Boot 3.5.x (Java 17) |
+| AI 编排 | Spring AI 1.1.8(OpenAI 兼容接 DeepSeek / 通义千问) |
+| 数据库 | MySQL 8.0 + MyBatis-Plus(业务库 `learn_platform`) |
+| 向量数据库 | Chroma(语义检索,集合 `learn_platform_knowledge`) |
+| 缓存 | Redis 7(对话上下文、图谱缓存、配额计数) |
+| 文档解析 | Apache PDFBox + Apache POI + **PaddleOCR**(扫描件) |
+| 生成大模型 | DeepSeek `deepseek-chat` 或通义 `qwen-plus` |
+| 嵌入模型 | SiliconFlow 托管 `BAAI/bge-small-zh-v1.5`(可换 text-embedding-v3) |
 | 前端 | Vue 3 + Vite + Element Plus + Pinia + ECharts |
+| 约束规范 | 见 `PROJECT_CONVENTIONS.md`(修改/提交流程、提交规范) |
 
-> 说明:毕设文档中的 Spring Boot 3.2.x 已停止维护,且 Spring AI 正式版要求 Spring Boot 3.4+,故选用 3.5.x。本机默认 `java` 若为 JDK 8,请安装 JDK 17 并为后端构建配置 `JAVA_HOME`。
+## 二、功能模块
 
-## 二、目录结构
+**用户端**
+- **我的知识库**:学科→课程→章节→知识点 四级分类(用户自建)+ 资料上传(PDF/Word/PPT/TXT,扫描件自动 OCR)、解析、分块、向量入库、预览/重解析/删除;资源可见性(私有/公开/分享)。
+- **AI 助手**:可创建多个助手,每个绑定课程库(知识隔离),自定义系统提示词/模型/温度/风格/上下文轮数/引用;多轮对话带 [n] 可溯源引用。
+- **学习计划**:目标→阶段→任务(可关联课程/章节/知识点),完成打卡、连续天数、提醒;完成任务自动打卡。
+- **社区**:帖子/文章 + 问答(提问→回答→采纳最佳答案),评论/点赞,可挂课程/知识点;内容可举报/审核。
+- **出题模拟**:依据 **教材块 / 用户重点 / 样卷** 三种出处自动出题;题型=单选/多选/判断/填空/简答,题量难度可调;模拟考试限时作答;**客观题自动判分 + 主观题 AI 评分**(附评语);错题自动入**错题本**。
+- **项目辅导**:AI 全流程陪跑——需求拆解→技术方案→任务清单→阶段计划→报告/文档框架,产出沉淀为项目档案。
+- **学习画像**:学习时长、今日学习、连续打卡、提问/练习/错题/计划/资料统计,弱项知识点分析。
+
+**管理端(管理员)**:用户管理、内容审核、AI 助手模板/模型配置、RAG 检索参数(阈值/Top-K/分块)、成本配额、数据看板与监控。
+
+## 三、目录结构
 
 ```
 RAG/
-├── backend/                # 后端(Spring Boot 3.5 + Spring AI 1.1)
+├── backend/                # Spring Boot 后端
 │   └── src/main/java/com/rag/edu/
-│       ├── config/         # Web/JWT拦截器、MyBatis-Plus、RAG参数、初始数据
-│       ├── common/         # 统一响应、全局异常、JWT、用户上下文
-│       ├── controller/     # auth / chat / courses / docs / assist / admin(kb,stats,users)
-│       ├── service/        # 认证、课程、文档、知识库配置、统计
-│       ├── service/rag/    # TextExtractor 解析 / TextChunker 分块 / IngestService 入库
-│       │                   # ChatService 检索问答 / ExamService 考点 / GraphService 图谱
+│       ├── config/         # Web/JWT/MyBatis-Plus/RAG参数/初始数据
+│       ├── common/         # 统一响应/异常/JWT/用户上下文
+│       ├── controller/     # auth/subjects/courses/chapters/knowledge-points/docs/assistants/plans/community/exam/projects/analytics/chat/admin…
+│       ├── service/        # 各模块业务 + rag/(解析/分块/入库/问答/OCR)
 │       ├── entity/ mapper/ dto/
-│   └── src/main/resources/application.yml
-├── frontend/               # 前端(Vue3 + Element Plus + ECharts)
-│   └── src/
-│       ├── views/          # Chat 问答 / Courses 课程 / Documents 文档 / ExamPoints 考点
-│       │                   # KnowledgeGraph 图谱 / History 历史 / admin 后台三页
-│       ├── api/ store/ router/ layout/ utils/
-├── sql/init.sql            # 建库建表 + 初始课程数据
-├── docker-compose.yml      # MySQL 8 + Redis 7 + Chroma 1.0
-└── README.md
+├── frontend/               # Vue3 前端(views/ 下为各模块页面)
+├── sql/init_learning.sql   # 新库 learn_platform 建表(32 张表)
+├── docs/                   # 前端原型设计、用例图等设计文档
+├── PROJECT_CONVENTIONS.md  # 项目约束(工作流/提交规范)
+└── docker-compose.yml      # MySQL + Redis + Chroma
 ```
 
-## 三、快速开始
+## 四、快速开始
 
 ### 0. 准备 API Key(必填)
-
 | 用途 | 默认服务商 | 环境变量 |
 |------|-----------|---------|
-| 生成大模型 | [DeepSeek 开放平台](https://platform.deepseek.com) | `LLM_API_KEY` |
-| 中文嵌入模型 | [SiliconFlow 硅基流动](https://siliconflow.cn)(bge-small-zh-v1.5 免费) | `EMBED_API_KEY` |
+| 生成大模型 | DeepSeek | `LLM_API_KEY` |
+| 中文嵌入模型 | SiliconFlow(bge-small-zh 免费) | `EMBED_API_KEY` |
 
-### 1. 启动基础设施(需要 Docker Desktop)
-
+### 1. 建库(MySQL)
 ```bash
-docker compose up -d
-# MySQL 3306(首次启动自动执行 sql/init.sql 建表)/ Redis 6379 / Chroma 8000
+mysql -u root -p < sql/init_learning.sql   # 建 learn_platform,32 张表
 ```
+> 本机 MySQL 密码若与默认不同,请设置 `DB_PASSWORD`。
 
-没有 Docker 时也可本机安装 MySQL 8 与 Redis,手工导入 `sql/init.sql`;Chroma 可用 `pip install chromadb && chroma run` 启动。
+### 2. 启动依赖
+```bash
+docker compose up -d   # MySQL / Redis / Chroma(无 Docker 可本机安装)
+```
+> 需 Chroma 8000、Redis 6379、MySQL 3306。RAG 模块依赖 Chroma 与嵌入 API。
 
-### 2. 启动后端
-
+### 3. 启动后端
 ```bash
 cd backend
-# Windows PowerShell 示例(本机默认 JDK 为 8 时,需指向 JDK 17):
-#   $env:JAVA_HOME = "E:\JDK\jdk-17.0.12"
-export LLM_API_KEY=sk-xxx        # Git Bash 写法
-export EMBED_API_KEY=sk-xxx
+# 本机默认 JDK 为 8 时需指向 JDK 17:
+$env:JAVA_HOME = "E:\JDK\jdk-17.0.12"
+$env:DB_PASSWORD = "你的MySQL密码"     # 若与本机不同
+$env:LLM_API_KEY = "sk-xxx"
+$env:EMBED_API_KEY = "sk-xxx"
 mvn spring-boot:run
 ```
+启动后:`http://localhost:8080`,首次自动创建账号 **admin/admin123(管理员)、student/123456(用户)**。
 
-启动成功后:`http://localhost:8080`。首次启动会自动创建账号 **admin / admin123(管理员)、student / 123456(学生)**。
-
-所有配置均可通过环境变量覆盖(DB_HOST、DB_PASSWORD、REDIS_HOST、CHROMA_HOST、LLM_BASE_URL、LLM_MODEL、EMBED_BASE_URL、EMBED_MODEL 等),详见 `application.yml` 注释。
-
-### 3. 启动前端
-
+### 4. 启动前端
 ```bash
 cd frontend
 npm install
-npm run dev
-# 打开 http://localhost:5173,/api 自动代理到 8080
+npm run dev    # http://localhost:5173,/api 自动代理到 8080
 ```
+> 无后端时可用 `npm run dev:mock` 走内置 mock 数据预览页面(演示/截图)。
 
-> 本机 npm 默认源若指向公司内部 artifactory(不通),临时换源安装:
-> `npm install --registry=https://registry.npmmirror.com`
+### 5. 验收流程
+1. `admin` 或 `student` 登录 → 「我的知识库」确认学科示例(计算机类/数学类/语言类)。
+2. 「我的知识库」新建课程 → 上传 PDF 教材,查看解析状态与分块预览。
+3. 新建「AI 助手」绑定该课程 → 提问,查看带 [1][2] 引用的回答。
+4. 「学习计划」建计划 + 任务,完成打卡。
+5. 「出题模拟」选出处生成题目 → 模拟考试 → 查看 AI 评分与解析/错题本。
+6. 「项目辅导」输入项目题目 → 查看 AI 拆解方案。
+7. 管理端:数据看板、内容审核、RAG 检索参数、配额。
 
-### 4. 验收流程(建议按此顺序演示)
+## 五、常用环境变量
 
-1. 用 `admin` 登录 → 「知识库浏览」确认 3 门示例课程;
-2. 「文档列表」上传 1-2 个 PDF 课件(如数字图像处理)→ 等待解析状态变为"已解析";
-3. 「智能问答」提问课件中的知识点,检查回答中的 **[1][2] 引用来源**(文档名 + 页码 + 相似度);
-4. 「考点生成」「知识图谱」分别体验章节考点输出与知识点关联图;
-5. 管理端:「数据看板」看提问量趋势/问答日志;「知识库管理」调大 Top-K、修改分块大小后对课程"重建向量"再提问对比效果。
+| 变量 | 默认 | 说明 |
+|------|------|------|
+| `DB_HOST` / `DB_NAME` | localhost / learn_platform | 数据库 |
+| `DB_USER` / `DB_PASSWORD` | root / root123456 | 数据库账号 |
+| `REDIS_HOST` / `REDIS_PORT` | localhost / 6379 | Redis |
+| `CHROMA_HOST` / `CHROMA_PORT` | http://localhost / 8000 | 向量库 |
+| `LLM_BASE_URL` / `LLM_MODEL` | api.deepseek.com / deepseek-chat | 生成模型 |
+| `EMBED_BASE_URL` / `EMBED_MODEL` | api.siliconflow.cn / BAAI/bge-small-zh-v1.5 | 嵌入模型 |
+| `OCR_BASE_URL` | (空) | OCR 服务(PaddleOCR),扫描件解析用 |
 
-## 四、RAG 核心链路(对应论文第五章)
+## 六、RAG 核心链路
+1. 文档摄入解析(PDF/Word/PPT/TXT,扫描件走 OCR,保留页码)。2. 递归字符分块。3. 向量化嵌入。4. 写入 Chroma。5. 问题向量检索 Top-K。6. (可选)召回重排。7. 大模型生成带引用回答。后续统一入 `doc_chunk`/`qa_record`。
 
-1. **文档摄入解析**:`TextExtractor` 按页抽取文本(PDFBox 按页 / PPT 按幻灯片 / Word、TXT 整篇),保留页码。
-2. **递归字符分块**:`TextChunker` 按分隔符优先级(空行→换行→句号→…)递归拆分,目标 500 字符、相邻块重叠 50 字符,避免知识点被切断。
-3. **向量嵌入入库**:`IngestService` 调用 bge-small-zh 嵌入,写入 Chroma(向量 ID 规则 `docId-chunkIndex`,与 `doc_chunk` 表一一对应,支持精准删除/重建)。
-4. **检索增强问答**:`ChatService` 将问题向量化 → 相似度检索 Top-K(阈值可在后台调)→ 拼接"最近3轮对话 + 知识上下文 + 问题"→ 生成回答并要求标注 [1][2] 引用;引用来源(文档、页码、分块、相似度)落库 `qa_record.reference`。
-5. **学习辅助**:`ExamService` 按章节检索后生成知识点梳理与练习题;`GraphService` 用大模型抽取知识块关键词,以共现关系构建知识图谱(Redis 缓存 2 小时)。
+> 该链路不仅用于问答,也支撑"AI 助手限定课程检索"与"出题模拟"(从教材/重点/样卷生成题目)。
 
-## 五、数据库设计
+## 七、常见问题
+- **后端启动连接 Chroma 失败** → 先 `docker compose up -d`,确认 8000 可用。
+- **换嵌入模型维度不匹配** → 删除旧 Collection 或对全部课程重建向量。
+- **扫描件解析为空** → 需配置 `OCR_BASE_URL`(PaddleOCR 服务);不配则 OCR 关闭。
+- **登录不上** → 先确认后端启动、`learn_platform` 已建库、`DB_PASSWORD` 正确。
 
-`sql/init.sql` 共 5 张表:用户 `sys_user`、课程 `course`、文档 `course_document`、分块 `doc_chunk`、问答记录 `qa_record`,与论文"核心数据库表设计"一致,另补充了 `course`、`doc_chunk`(支撑课程分类管理与分块可查/可重建)。
-
-## 六、常见问题
-
-- **启动报错连接 Chroma 失败** → 先 `docker compose up -d`,确认 8000 端口可访问;`initialize-schema: true` 会在首次启动自动建 Collection。
-- **换嵌入模型后检索报维度不匹配** → 嵌入模型维度变化后需在 Chroma 中删除旧 Collection(或在管理后台对全部课程重建)。
-- **上传解析失败** → 查看文档列表"失败原因"列;扫描版 PDF(图片型)无文本层,当前版本不支持 OCR,可列为论文"不足与展望"。
-- **DeepSeek 报 embeddings 不支持** → 生成模型与嵌入模型是两个独立服务,DeepSeek 仅用于生成,嵌入走 SiliconFlow/通义,分别配置 `LLM_*` 与 `EMBED_*` 两组变量。
-- **端口冲突** → MySQL 3306 / Redis 6379 / Chroma 8000 / 后端 8080 / 前端 5173,可在 docker-compose.yml 与 application.yml 中修改。
-
-## 七、后续可扩展(论文"总结与展望"素材)
-
-- 召回重排序(BGE-Reranker,文档中 RAG 流程第 6 步预留位置在 `ChatService` 检索之后);
-- 流式输出(SSE)、语音提问多模态扩展;
-- 扫描版 PDF OCR 解析、PPT 图片理解;
-- 检索过程可视化(命中分块高亮,答辩演示亮点)。
+## 八、后续可扩展(论文展望)
+召回重排序(BGE-Reranker)、流式输出、移动端 Vant 组件强化、多模态(图片/视频)检索、语音提问。
