@@ -26,3 +26,9 @@ logs/
 *.log
 .env
 .DS_Store
+
+# Python(虚拟环境/缓存)
+.venv/
+venv/
+__pycache__/
+*.pyc
