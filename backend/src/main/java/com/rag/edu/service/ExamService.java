@@ -178,8 +178,8 @@ public class ExamService {
             if (q == null) {
                 continue;
             }
-            int score = scoreMap.getOrDefault(q.getQuestionId(), new PaperQuestion()).getScore() == null
-                    ? 10 : scoreMap.get(q.getQuestionId()).getScore();
+            PaperQuestion pq = scoreMap.get(q.getQuestionId());
+            int score = (pq == null || pq.getScore() == null) ? 10 : pq.getScore();
             total += score;
             ExamAnswer ea = new ExamAnswer();
             ea.setExamId(exam.getExamId());
