@@ -26,7 +26,7 @@ import java.util.*;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class ExamService {
+public class ExamPracticeService {
 
     private static final int MAX_SOURCE_CHARS = 4000;
 
@@ -41,11 +41,11 @@ public class ExamService {
     private final MistakeMapper mistakeMapper;
     private final StudyLogService studyLogService;
 
-    public ExamService(ChatModel chatModel, ObjectMapper objectMapper, ExamSourceMapper sourceMapper,
-                       QuestionMapper questionMapper, PaperMapper paperMapper,
-                       PaperQuestionMapper paperQuestionMapper, ExamRecordMapper examRecordMapper,
-                       ExamAnswerMapper examAnswerMapper, MistakeMapper mistakeMapper,
-                       StudyLogService studyLogService) {
+    public ExamPracticeService(ChatModel chatModel, ObjectMapper objectMapper, ExamSourceMapper sourceMapper,
+                               QuestionMapper questionMapper, PaperMapper paperMapper,
+                               PaperQuestionMapper paperQuestionMapper, ExamRecordMapper examRecordMapper,
+                               ExamAnswerMapper examAnswerMapper, MistakeMapper mistakeMapper,
+                               StudyLogService studyLogService) {
         this.chatClient = ChatClient.builder(chatModel).build();
         this.objectMapper = objectMapper;
         this.sourceMapper = sourceMapper;
