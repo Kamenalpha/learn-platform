@@ -2,7 +2,7 @@ package com.rag.edu.controller;
 
 import com.rag.edu.common.Result;
 import com.rag.edu.common.UserContext;
-import com.rag.edu.entity.CourseDocument;
+import com.rag.edu.entity.DocResource;
 import com.rag.edu.service.DocumentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
@@ -29,13 +29,13 @@ public class DocumentController {
 
     /** 上传课件并自动解析入库 */
     @PostMapping("/upload")
-    public Result<CourseDocument> upload(@RequestParam("file") MultipartFile file,
-                                         @RequestParam("courseId") Long courseId) {
+    public Result<DocResource> upload(@RequestParam("file") MultipartFile file,
+                                      @RequestParam("courseId") Long courseId) {
         return Result.ok(documentService.upload(file, courseId, UserContext.userId()));
     }
 
     @GetMapping
-    public Result<List<CourseDocument>> list(@RequestParam(required = false) Long courseId) {
+    public Result<List<DocResource>> list(@RequestParam(required = false) Long courseId) {
         return Result.ok(documentService.list(courseId));
     }
 
@@ -58,16 +58,14 @@ public class DocumentController {
                 .body((Resource) loaded.get("resource"));
     }
 
-    @PostMapping("/{docId}/reparse")
-    public Result<Integer> reparse(@PathVariable Long docId) {
-        UserContext.requireAdmin();
-        return Result.ok(documentService.reparse(docId));
+    @PostMapping("/{resourceId}/reparse")
+    public Result<Integer> reparse(@PathVariable Long resourceId) {
+        return Result.ok(documentService.reparse(resourceId, UserContext.userId()));
     }
 
-    @DeleteMapping("/{docId}")
-    public Result<Void> delete(@PathVariable Long docId) {
-        UserContext.requireAdmin();
-        documentService.delete(docId);
+    @DeleteMapping("/{resourceId}")
+    public Result<Void> delete(@PathVariable Long resourceId) {
+        documentService.delete(resourceId, UserContext.userId());
         return Result.ok();
     }
 }

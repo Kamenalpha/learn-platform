@@ -17,7 +17,7 @@ public class DocChunk {
     @TableId(value = "chunk_id", type = IdType.AUTO)
     private Long chunkId;
 
-    private Long docId;
+    private Long resourceId;
 
     private Integer chunkIndex;
 
@@ -26,7 +26,7 @@ public class DocChunk {
     /** PDF页码/幻灯片页号,无页概念为 null */
     private Integer pageNum;
 
-    /** 向量库ID: docId-chunkIndex */
+    /** 向量库ID: resourceId-chunkIndex */
     private String vectorId;
 
     private LocalDateTime createTime;

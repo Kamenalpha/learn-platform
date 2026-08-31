@@ -1,10 +1,11 @@
 package com.rag.edu.controller;
 
 import com.rag.edu.common.Result;
+import com.rag.edu.common.UserContext;
 import com.rag.edu.config.RagProperties;
 import com.rag.edu.dto.KbDtos.KbConfig;
-import com.rag.edu.entity.CourseDocument;
-import com.rag.edu.mapper.CourseDocumentMapper;
+import com.rag.edu.entity.DocResource;
+import com.rag.edu.mapper.DocResourceMapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.rag.edu.service.DocumentService;
 import com.rag.edu.service.KbConfigService;
@@ -26,7 +27,7 @@ public class KbController {
 
     private final KbConfigService kbConfigService;
     private final DocumentService documentService;
-    private final CourseDocumentMapper documentMapper;
+    private final DocResourceMapper resourceMapper;
     private final RagProperties props;
 
     @Value("${spring.ai.vectorstore.chroma.client.host:http://localhost}")
@@ -35,7 +36,7 @@ public class KbController {
     @Value("${spring.ai.vectorstore.chroma.client.port:8000}")
     private int chromaPort;
 
-    @Value("${spring.ai.vectorstore.chroma.collection-name:rag_edu_knowledge}")
+    @Value("${spring.ai.vectorstore.chroma.collection-name:learn_platform_knowledge}")
     private String collectionName;
 
     @GetMapping("/config")
@@ -52,12 +53,12 @@ public class KbController {
     /** 按课程重建向量库:对课程下全部文档重新解析入库 */
     @PostMapping("/rebuild/{courseId}")
     public Result<Map<String, Object>> rebuild(@PathVariable Long courseId) {
-        List<CourseDocument> docs = documentMapper.selectList(
-                new LambdaQueryWrapper<CourseDocument>().eq(CourseDocument::getCourseId, courseId));
+        List<DocResource> docs = resourceMapper.selectList(
+                new LambdaQueryWrapper<DocResource>().eq(DocResource::getCourseId, courseId));
         int ok = 0, fail = 0;
-        for (CourseDocument doc : docs) {
+        for (DocResource doc : docs) {
             try {
-                documentService.reparse(doc.getDocId());
+                documentService.reparse(doc.getResourceId(), UserContext.userId());
                 ok++;
             } catch (Exception e) {
                 fail++;
@@ -78,9 +79,9 @@ public class KbController {
         data.put("embedBatchSize", props.getEmbedBatchSize());
         data.put("chunkSize", props.getChunkSize());
         data.put("chunkOverlap", props.getChunkOverlap());
-        data.put("docTotal", documentMapper.selectCount(null));
-        data.put("docParsed", documentMapper.selectCount(
-                new LambdaQueryWrapper<CourseDocument>().eq(CourseDocument::getParseStatus, 1)));
+        data.put("docTotal", resourceMapper.selectCount(null));
+        data.put("docParsed", resourceMapper.selectCount(
+                new LambdaQueryWrapper<DocResource>().eq(DocResource::getParseStatus, 1)));
         return Result.ok(data);
     }
 }

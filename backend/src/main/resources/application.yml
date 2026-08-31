@@ -3,11 +3,11 @@ server:
 
 spring:
   application:
-    name: rag-edu
+    name: learn-platform
 
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://${DB_HOST:localhost}:3306/rag_edu?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://${DB_HOST:localhost}:3306/${DB_NAME:learn_platform}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
     username: ${DB_USER:root}
     password: ${DB_PASSWORD:root123456}
 
@@ -43,7 +43,7 @@ spring:
         client:
           host: ${CHROMA_HOST:http://localhost}
           port: ${CHROMA_PORT:8000}
-        collection-name: rag_edu_knowledge
+        collection-name: learn_platform_knowledge
         initialize-schema: true   # 启动时自动创建 Collection
 
 mybatis-plus:
@@ -61,6 +61,8 @@ rag:
   embed-batch-size: 16       # 向量嵌入批量大小
   default-top-k: 5           # 默认召回数量
   default-threshold: 0.5     # 默认相似度阈值
+  ocr-base-url: ${OCR_BASE_URL:}          # OCR服务地址(如 http://localhost:9000/ocr),为空关闭OCR
+  ocr-max-pages: 30          # OCR 最大识别页数
   jwt-secret: rag-edu-graduation-project-jwt-secret-please-change-in-prod
   jwt-expire-hours: 72
 

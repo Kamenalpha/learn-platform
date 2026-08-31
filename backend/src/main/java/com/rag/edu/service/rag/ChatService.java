@@ -64,16 +64,33 @@ public class ChatService {
         this.objectMapper = objectMapper;
     }
 
-    public AskResp ask(Long userId, String sessionId, String question) {
+    public AskResp ask(Long userId, String sessionId, String question,
+                       List<Long> courseIds, String assistantPrompt) {
         long start = System.currentTimeMillis();
         KbConfig cfg = kbConfigService.get();
 
-        // 1. 相似度检索:问题 -> 向量,召回 Top-K 知识块
-        List<Document> hits = vectorStore.similaritySearch(SearchRequest.builder()
-                .query(question)
-                .topK(cfg.topK() == null ? 5 : cfg.topK())
-                .similarityThreshold(cfg.similarityThreshold() == null ? 0.5 : cfg.similarityThreshold())
-                .build());
+        // 1. 相似度检索:问题 -> 向量,召回 Top-K 知识块。
+        //    若指定助手且绑定课程,则限定在绑定课程内检索(知识隔离)。
+        Integer topK = cfg.topK() == null ? 5 : cfg.topK();
+        Double threshold = cfg.similarityThreshold() == null ? 0.5 : cfg.similarityThreshold();
+        List<Document> hits;
+        SearchRequest scoped = null;
+        if (courseIds != null && !courseIds.isEmpty()) {
+            List<String> ids = courseIds.stream().map(String::valueOf).toList();
+            String expr = "courseId in ['" + String.join("', '", ids) + "']";
+            scoped = SearchRequest.builder().query(question).topK(topK)
+                    .similarityThreshold(threshold).filterExpression(expr).build();
+        }
+        try {
+            hits = scoped != null
+                    ? vectorStore.similaritySearch(scoped)
+                    : vectorStore.similaritySearch(SearchRequest.builder().query(question)
+                            .topK(topK).similarityThreshold(threshold).build());
+        } catch (Exception e) {
+            log.warn("限定课程检索失败,回退全局检索: {}", e.getMessage());
+            hits = vectorStore.similaritySearch(SearchRequest.builder().query(question)
+                    .topK(topK).similarityThreshold(threshold).build());
+        }
         if (hits == null) {
             hits = List.of();
         }
@@ -101,11 +118,14 @@ public class ChatService {
                 + "【知识上下文】\n" + (context.isEmpty() ? "(无)" : context)
                 + "【问题】" + question + "\n请依据以上规则回答。";
 
-        // 4. 大模型生成
+        // 4. 大模型生成(若指定助手则用其自定义系统提示词,否则用默认)
+        String sys = (assistantPrompt == null || assistantPrompt.isBlank())
+                ? SYSTEM_PROMPT + (cfg.promptSuffix() == null ? "" : "\n" + cfg.promptSuffix())
+                : assistantPrompt;
         String answer;
         try {
             answer = chatClient.prompt()
-                    .system(SYSTEM_PROMPT + (cfg.promptSuffix() == null ? "" : "\n" + cfg.promptSuffix()))
+                    .system(sys)
                     .user(userMessage)
                     .call()
                     .content();
@@ -165,7 +185,7 @@ public class ChatService {
             return null;
         }
         DocChunk chunk = chunkMapper.selectOne(new LambdaQueryWrapper<DocChunk>()
-                .eq(DocChunk::getDocId, docId)
+                .eq(DocChunk::getResourceId, docId)
                 .eq(DocChunk::getVectorId, vectorId.toString())
                 .last("LIMIT 1"));
         return chunk == null ? null : chunk.getChunkId();

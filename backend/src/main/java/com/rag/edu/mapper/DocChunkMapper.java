@@ -12,9 +12,9 @@ public interface DocChunkMapper extends BaseMapper<DocChunk> {
     /** 按课程取分块(知识图谱构建用) */
     @Select("""
             SELECT ch.* FROM doc_chunk ch
-            JOIN course_document d ON d.doc_id = ch.doc_id
-            WHERE d.course_id = #{courseId}
-            ORDER BY ch.doc_id, ch.chunk_index
+            JOIN resource r ON r.resource_id = ch.resource_id
+            WHERE r.course_id = #{courseId}
+            ORDER BY ch.resource_id, ch.chunk_index
             LIMIT #{limit}
             """)
     List<DocChunk> listByCourse(@Param("courseId") Long courseId, @Param("limit") int limit);

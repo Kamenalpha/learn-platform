@@ -2,12 +2,12 @@ package com.rag.edu.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.rag.edu.entity.CourseDocument;
 import com.rag.edu.entity.DocChunk;
+import com.rag.edu.entity.DocResource;
 import com.rag.edu.entity.QaRecord;
 import com.rag.edu.entity.SysUser;
-import com.rag.edu.mapper.CourseDocumentMapper;
 import com.rag.edu.mapper.DocChunkMapper;
+import com.rag.edu.mapper.DocResourceMapper;
 import com.rag.edu.mapper.QaRecordMapper;
 import com.rag.edu.mapper.SysUserMapper;
 import lombok.RequiredArgsConstructor;
@@ -26,19 +26,19 @@ import java.util.Map;
 public class StatsService {
 
     private final SysUserMapper userMapper;
-    private final CourseDocumentMapper documentMapper;
+    private final DocResourceMapper resourceMapper;
     private final DocChunkMapper chunkMapper;
     private final QaRecordMapper qaRecordMapper;
 
     public Map<String, Object> overview() {
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("userCount", userMapper.selectCount(null));
-        data.put("docCount", documentMapper.selectCount(null));
+        data.put("docCount", resourceMapper.selectCount(null));
         data.put("chunkCount", chunkMapper.selectCount(null));
         data.put("qaCount", qaRecordMapper.selectCount(null));
-        data.put("parsedCount", documentMapper.selectCount(
-                new LambdaQueryWrapper<CourseDocument>()
-                        .eq(CourseDocument::getParseStatus, 1)));
+        data.put("parsedCount", resourceMapper.selectCount(
+                new LambdaQueryWrapper<DocResource>()
+                        .eq(DocResource::getParseStatus, 1)));
         return data;
     }
 
@@ -47,7 +47,7 @@ public class StatsService {
     }
 
     public List<Map<String, Object>> docsByCourse() {
-        return documentMapper.countByCourse();
+        return resourceMapper.countByCourse();
     }
 
     /** 问答日志(分页) */

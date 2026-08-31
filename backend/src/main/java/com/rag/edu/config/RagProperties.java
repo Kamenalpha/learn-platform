@@ -33,4 +33,10 @@ public class RagProperties {
 
     /** JWT 过期时间(小时) */
     private long jwtExpireHours = 72;
+
+    /** OCR 服务地址(如 PaddleOCR 服务),为空则关闭 OCR,扫描件将无法解析 */
+    private String ocrBaseUrl = "";
+
+    /** OCR 最大识别页数(避免成本失控),默认 30 */
+    private int ocrMaxPages = 30;
 }

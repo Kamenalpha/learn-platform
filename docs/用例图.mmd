@@ -1,0 +1,66 @@
+%% 用例图 —— 通用多学科智能学习平台 (Mermaid 流程图近似)
+%% 仅用于支持 Mermaid 的 Markdown 渲染器; 正式论文建议用 PlantUML 版渲染成图片
+flowchart LR
+  U["用户(学习者)"]:::actor
+  A["管理员"]:::actor
+  AI["大模型/向量库/OCR 服务"]:::actor
+
+  subgraph KB[个人知识库]
+    UC3("上传教材资料(含OCR)")
+    UC4("管理四级分类与标签")
+    UC5("设置可见性(公开/分享链接)")
+    UC6("浏览与预览资料")
+  end
+  subgraph ACCT[账号与个人]
+    UC1("注册/登录")
+    UC2("管理个人资料")
+  end
+  subgraph AS[AI助手]
+    UC7("定制AI助手")
+    UC8("配置助手(绑定课程/提示词/模型)")
+    UC9("智能答疑对话(带引用)")
+    UC10("分享助手")
+  end
+  subgraph PLAN[学习计划]
+    UC11("制定学习计划")
+    UC12("AI生成学习路径")
+    UC13("打卡与进度跟踪")
+  end
+  subgraph COMM[社区]
+    UC14("发帖/提问")
+    UC15("回答与采纳")
+    UC16("评论/点赞/收藏/关注")
+    UC17("搜索社区")
+    UC18("举报违规")
+  end
+  subgraph EXAM[出题模拟]
+    UC19("生成模拟题(教材/重点/样卷)")
+    UC20("模拟考试与限时作答")
+    UC21("查看AI评分与解析")
+    UC22("错题本管理")
+  end
+  subgraph PROJ[项目辅导]
+    UC23("项目需求拆解")
+    UC24("方案与任务清单(全流程陪跑)")
+    UC25("保存项目档案")
+  end
+  subgraph ANAL[学习分析]
+    UC26("学习画像/周月报")
+    UC27("全局搜索")
+    UC28("数据导出/备份")
+  end
+  subgraph ADM[管理端]
+    UC29("用户管理")
+    UC30("内容审核")
+    UC31("AI助手模板/模型配置")
+    UC32("RAG检索参数配置")
+    UC33("成本配额管理")
+    UC34("数据看板与统计")
+    UC35("系统监控")
+  end
+
+  U --> ACCT & KB & AS & PLAN & COMM & EXAM & PROJ & ANAL
+  A --> ADM
+  AI -.-> UC9 & UC12 & UC19 & UC21 & UC24 & UC3
+
+  classDef actor fill:#fdd,stroke:#333,stroke-width:2px;

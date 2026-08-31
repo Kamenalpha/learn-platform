@@ -9,6 +9,11 @@ import App from './App.vue'
 import router from './router'
 import './styles.css'
 
+// mock 演示模式:npm run dev:mock 启用时,用内置示例数据代替后端接口(用于预览/截图)
+if (import.meta.env.MODE === 'mock') {
+  import('./mock-dev')
+}
+
 const app = createApp(App)
 
 app.use(createPinia())

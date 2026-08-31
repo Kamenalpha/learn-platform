@@ -74,8 +74,8 @@ public class GraphService {
 
         List<DocChunk> chunks = chunkMapper.selectList(
                 new LambdaQueryWrapper<DocChunk>()
-                        .inSql(DocChunk::getDocId,
-                               "SELECT doc_id FROM course_document WHERE course_id = " + courseId)
+                        .inSql(DocChunk::getResourceId,
+                               "SELECT resource_id FROM resource WHERE course_id = " + courseId)
                         .last("LIMIT " + MAX_CHUNKS));
         if (chunks.isEmpty()) {
             throw new BizException("该课程暂无已解析的知识块,请先上传课件");

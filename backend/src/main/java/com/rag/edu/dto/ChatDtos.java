@@ -11,7 +11,8 @@ public class ChatDtos {
 
     public record AskReq(
             @NotBlank(message = "会话ID不能为空") String sessionId,
-            @NotBlank(message = "问题不能为空") String question) {
+            @NotBlank(message = "问题不能为空") String question,
+            Long assistantId) {
     }
 
     /** 引用来源:可溯源到文档与页码 */

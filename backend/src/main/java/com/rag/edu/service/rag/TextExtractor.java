@@ -1,6 +1,7 @@
 package com.rag.edu.service.rag;
 
 import com.rag.edu.common.BizException;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
@@ -31,7 +32,10 @@ import java.util.List;
  */
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class TextExtractor {
+
+    private final OcrService ocrService;
 
     /**
      * 一个解析段落:page 为页码(PDF页/幻灯片页),无页概念的文档为 null
@@ -70,6 +74,10 @@ public class TextExtractor {
                     segments.add(new Segment(i, text));
                 }
             }
+        }
+        // 无文本层 = 扫描件;配置了 OCR 服务时交由 OCR 识别
+        if (segments.isEmpty()) {
+            return ocrService.recognizePdf(file);
         }
         return segments;
     }

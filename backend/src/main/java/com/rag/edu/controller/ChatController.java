@@ -3,10 +3,12 @@ package com.rag.edu.controller;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.rag.edu.common.Result;
 import com.rag.edu.common.UserContext;
+import com.rag.edu.dto.AssistantDtos.AssistantVO;
 import com.rag.edu.dto.ChatDtos.AskReq;
 import com.rag.edu.dto.ChatDtos.AskResp;
 import com.rag.edu.entity.QaRecord;
 import com.rag.edu.mapper.QaRecordMapper;
+import com.rag.edu.service.AssistantService;
 import com.rag.edu.service.rag.ChatService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -24,11 +26,19 @@ public class ChatController {
 
     private final ChatService chatService;
     private final QaRecordMapper qaRecordMapper;
+    private final AssistantService assistantService;
 
-    /** 提问(RAG 检索 + 大模型生成) */
+    /** 提问(RAG 检索 + 大模型生成;可选指定助手,限定其绑定课程) */
     @PostMapping("/ask")
     public Result<AskResp> ask(@Valid @RequestBody AskReq req) {
-        return Result.ok(chatService.ask(UserContext.userId(), req.sessionId(), req.question()));
+        List<Long> courseIds = null;
+        String prompt = null;
+        if (req.assistantId() != null) {
+            AssistantVO a = assistantService.getDetail(req.assistantId());
+            courseIds = a.courseIds();
+            prompt = a.systemPrompt();
+        }
+        return Result.ok(chatService.ask(UserContext.userId(), req.sessionId(), req.question(), courseIds, prompt));
     }
 
     /** 当前用户的会话列表 */

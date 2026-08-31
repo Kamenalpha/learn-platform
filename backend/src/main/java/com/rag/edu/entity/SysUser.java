@@ -23,8 +23,18 @@ public class SysUser {
 
     private String nickname;
 
-    /** 角色:0学生 1管理员 */
+    /** 头像URL */
+    private String avatar;
+
+    private String email;
+
+    private String phone;
+
+    /** 角色:0用户(学习者) 1管理员 */
     private Integer role;
+
+    /** 状态:1启用 0禁用 */
+    private Integer status;
 
     private LocalDateTime createTime;
 }

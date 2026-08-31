@@ -1,0 +1,124 @@
+@startuml
+' 用例图 —— 通用多学科智能学习平台
+' 参与者: 用户(学习者)、管理员; 支撑系统: 大模型/向量库/OCR 服务
+' 渲染建议: 方式一 PlantUML Server https://www.plantuml.com/plantuml
+'           方式二 本地渲染(需 Graphviz dot); 无 Graphviz 时可在开头加 !pragma layout smetana
+
+left to right direction
+skinparam packageStyle rectangle
+skinparam usecase {
+  BackgroundColor White
+  BorderColor Black
+}
+
+actor "用户(学习者)" as U
+actor "管理员" as A
+actor "大模型/向量库/OCR 服务" as AI <<系统>>
+
+package "账号与个人" {
+  usecase "注册/登录" as UC1
+  usecase "管理个人资料" as UC2
+}
+
+package "个人知识库" {
+  usecase "上传教材/资料(含OCR)" as UC3
+  usecase "管理四级分类与标签" as UC4
+  usecase "设置可见性(公开/分享链接)" as UC5
+  usecase "浏览与预览资料" as UC6
+}
+
+package "AI 助手" {
+  usecase "定制 AI 助手" as UC7
+  usecase "配置助手(绑定课程/提示词/模型)" as UC8
+  usecase "智能答疑对话(带引用)" as UC9
+  usecase "分享助手" as UC10
+}
+
+package "学习计划" {
+  usecase "制定学习计划" as UC11
+  usecase "AI 生成学习路径" as UC12
+  usecase "学习打卡与进度跟踪" as UC13
+}
+
+package "社区" {
+  usecase "发帖/提问" as UC14
+  usecase "回答与采纳最佳答案" as UC15
+  usecase "评论/点赞/收藏/关注" as UC16
+  usecase "搜索社区内容" as UC17
+  usecase "举报违规内容" as UC18
+}
+
+package "出题模拟" {
+  usecase "生成模拟题(教材/重点/样卷)" as UC19
+  usecase "模拟考试与限时作答" as UC20
+  usecase "查看 AI 评分与解析" as UC21
+  usecase "错题本管理" as UC22
+}
+
+package "项目辅导" {
+  usecase "项目需求拆解" as UC23
+  usecase "生成方案与任务清单(全流程陪跑)" as UC24
+  usecase "保存项目档案" as UC25
+}
+
+package "学习分析" {
+  usecase "查看学习画像/周月报" as UC26
+  usecase "全局搜索" as UC27
+  usecase "数据导出/备份" as UC28
+}
+
+package "管理端" {
+  usecase "用户管理" as UC29
+  usecase "内容审核(社区/公开资源)" as UC30
+  usecase "AI 助手模板/模型配置" as UC31
+  usecase "RAG 检索参数配置" as UC32
+  usecase "成本配额管理" as UC33
+  usecase "数据看板与统计" as UC34
+  usecase "系统监控" as UC35
+}
+
+U --> UC1
+U --> UC2
+U --> UC3
+U --> UC4
+U --> UC5
+U --> UC6
+U --> UC7
+U --> UC8
+U --> UC9
+U --> UC10
+U --> UC11
+U --> UC12
+U --> UC13
+U --> UC14
+U --> UC15
+U --> UC16
+U --> UC17
+U --> UC18
+U --> UC19
+U --> UC20
+U --> UC21
+U --> UC22
+U --> UC23
+U --> UC24
+U --> UC25
+U --> UC26
+U --> UC27
+U --> UC28
+
+A --> UC29
+A --> UC30
+A --> UC31
+A --> UC32
+A --> UC33
+A --> UC34
+A --> UC35
+
+' 支撑系统接入: AI 类用例依赖外部服务
+UC9 ..> AI : 检索/生成
+UC12 ..> AI : 生成路径
+UC19 ..> AI : 出题
+UC21 ..> AI : 评分
+UC24 ..> AI : 辅导
+UC3 ..> AI : OCR/解析
+@enduml
