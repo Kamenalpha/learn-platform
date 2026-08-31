@@ -10,7 +10,6 @@ import com.rag.edu.dto.QuestionDtos.GradeItem;
 import com.rag.edu.dto.QuestionDtos.QuestionVO;
 import com.rag.edu.entity.*;
 import com.rag.edu.mapper.*;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
@@ -25,7 +24,6 @@ import java.util.*;
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class ExamPracticeService {
 
     private static final int MAX_SOURCE_CHARS = 4000;
