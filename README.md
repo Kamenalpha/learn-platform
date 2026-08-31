@@ -65,10 +65,15 @@ mysql -u root -p < sql/init_learning.sql   # 建 learn_platform,32 张表
 > 本机 MySQL 密码若与默认不同,请设置 `DB_PASSWORD`。
 
 ### 2. 启动依赖
-```bash
-docker compose up -d   # MySQL / Redis / Chroma(无 Docker 可本机安装)
-```
-> 需 Chroma 8000、Redis 6379、MySQL 3306。RAG 模块依赖 Chroma 与嵌入 API。
+方式 A(推荐,已内置脚本):`powershell -ExecutionPolicy Bypass -File scripts\start-infra.ps1` 启动 MySQL 服务 + venv 版 Chroma。
+
+方式 B(Docker):`docker compose up -d` 启动 MySQL / Redis / Chroma(需 Docker Desktop)。
+
+> 依赖清单:
+> - **MySQL**(3306):服务 `mysql8046`,库 `learn_platform`(需先建库)。
+> - **Chroma**(8000):本项目用 Python 虚拟环境 `.venv` 安装 `chromadb` 并运行(见 `scripts/start-infra.ps1`);数据在 `data/chroma`。
+> - **Redis**(6379):运行时依赖(对话上下文/图谱缓存/配额),未装则相关功能降级;可装 Memurai 或 WSL redis。
+> - **API Key**:设置 `LLM_API_KEY` / `EMBED_API_KEY`(AI 调用必需)。
 
 ### 3. 启动后端
 ```bash
