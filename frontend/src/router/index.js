@@ -2,11 +2,12 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { ElMessage } from 'element-plus'
 
 const routes = [
+  { path: '/', name: 'Home', component: () => import('../views/Home.vue') },
+  { path: '/explore', name: 'Explore', component: () => import('../views/Explore.vue') },
   { path: '/login', name: 'Login', component: () => import('../views/Login.vue') },
   {
     path: '/',
     component: () => import('../layout/MainLayout.vue'),
-    redirect: '/kb',
     children: [
       { path: 'kb', name: 'Kb', component: () => import('../views/KnowledgeBase.vue'), meta: { title: '我的知识库' } },
       { path: 'assistant', name: 'Assistant', component: () => import('../views/Assistant.vue'), meta: { title: 'AI 助手' } },
@@ -23,7 +24,7 @@ const routes = [
       { path: 'admin/users', name: 'AdminUsers', component: () => import('../views/admin/Users.vue'), meta: { title: '用户管理', admin: true } }
     ]
   },
-  { path: '/:pathMatch(.*)*', redirect: '/kb' }
+  { path: '/:pathMatch(.*)*', redirect: '/' }
 ]
 
 const router = createRouter({
@@ -33,7 +34,7 @@ const router = createRouter({
 
 router.beforeEach((to) => {
   const token = localStorage.getItem('token')
-  if (to.path !== '/login' && !token) {
+  if (to.path !== '/' && to.path !== '/explore' && to.path !== '/login' && !token) {
     return '/login'
   }
   if (to.path === '/login' && token) {

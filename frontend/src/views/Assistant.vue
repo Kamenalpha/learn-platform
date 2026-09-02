@@ -208,10 +208,10 @@ onMounted(async () => {
 
 .asst-panel {
   width: 220px;
-  background: #fff;
+  background: var(--ink-3);
   border-radius: 8px;
   padding: 12px;
-  border: 1px solid #ebeef5;
+  border: 1px solid var(--line);
 }
 
 .panel-head {
@@ -235,12 +235,12 @@ onMounted(async () => {
 }
 
 .asst-item:hover {
-  background: #f5f7fa;
+  background: var(--ink-3);
 }
 
 .asst-item.active {
-  border-color: #409eff;
-  background: #ecf5ff;
+  border-color: var(--amber);
+  background: rgba(242, 182, 76, 0.12);
 }
 
 .asst-name {
@@ -249,7 +249,7 @@ onMounted(async () => {
 }
 
 .asst-sub {
-  color: #909399;
+  color: var(--mist);
   font-size: 12px;
   margin-top: 2px;
 }
@@ -258,15 +258,15 @@ onMounted(async () => {
   position: absolute;
   right: 10px;
   top: 10px;
-  color: #909399;
+  color: var(--mist);
   cursor: pointer;
 }
 
 .chat-panel {
   flex: 1;
-  background: #fff;
+  background: var(--ink-3);
   border-radius: 8px;
-  border: 1px solid #ebeef5;
+  border: 1px solid var(--line);
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -303,7 +303,7 @@ onMounted(async () => {
 }
 
 .msg-row.assistant .bubble {
-  background: #f5f7fa;
+  background: var(--ink-3);
 }
 
 .msg-row.user {
@@ -311,7 +311,7 @@ onMounted(async () => {
 }
 
 .msg-row.user .bubble {
-  background: #ecf5ff;
+  background: rgba(242, 182, 76, 0.12);
 }
 
 .bubble {

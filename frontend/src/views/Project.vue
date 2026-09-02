@@ -123,7 +123,7 @@ onMounted(load)
 }
 
 .proj-card {
-  border: 1px solid #ebeef5;
+  border: 1px solid var(--line);
   border-radius: 8px;
   padding: 14px;
   margin-bottom: 12px;
@@ -131,7 +131,7 @@ onMounted(load)
 }
 
 .proj-card:hover {
-  border-color: #409eff;
+  border-color: var(--amber);
   box-shadow: 0 2px 12px rgba(0, 0, 0, .06);
 }
 
@@ -140,7 +140,7 @@ onMounted(load)
 }
 
 .proj-req {
-  color: #606266;
+  color: var(--mist);
   font-size: 13px;
   margin: 8px 0;
   max-height: 40px;
@@ -148,7 +148,7 @@ onMounted(load)
 }
 
 .proj-time {
-  color: #909399;
+  color: var(--mist);
   font-size: 12px;
 }
 

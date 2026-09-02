@@ -30,7 +30,7 @@
             <div class="pre-wrap">{{ m.content }}</div>
             <template v-if="m.role === 'assistant' && m.references?.length">
               <el-divider style="margin: 8px 0" />
-              <div style="font-size: 12px; color: #909399; margin-bottom: 4px">
+              <div style="font-size: 12px; color: var(--mist); margin-bottom: 4px">
                 参考来源(点击查看,共 {{ m.references.length }} 条,耗时 {{ m.elapsedMs }}ms):
               </div>
               <div
@@ -68,10 +68,10 @@
     <!-- 引用原文弹窗 -->
     <el-dialog v-model="sourceVisible" title="引用来源原文" width="560px">
       <template v-if="currentSource">
-        <p style="color: #409eff; font-weight: 600">
+        <p style="color: var(--amber); font-weight: 600">
           {{ currentSource.docTitle }}{{ currentSource.page ? ' · 第' + currentSource.page + '页' : '' }}
         </p>
-        <div class="pre-wrap" style="background: #f5f7fa; padding: 12px; border-radius: 6px">
+        <div class="pre-wrap" style="background: var(--ink-3); padding: 12px; border-radius: 6px">
           {{ currentSource.snippet }}
         </div>
       </template>
@@ -194,7 +194,7 @@ onMounted(() => {
 
 .session-panel {
   width: 230px;
-  background: #fff;
+  background: var(--ink-3);
   border-radius: 8px;
   padding: 12px;
   overflow-y: auto;
@@ -210,12 +210,12 @@ onMounted(() => {
 
 .session-item:hover,
 .session-item.active {
-  background: #ecf5ff;
+  background: rgba(242, 182, 76, 0.12);
 }
 
 .session-title {
   font-size: 13px;
-  color: #303133;
+  color: var(--paper);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -223,7 +223,7 @@ onMounted(() => {
 
 .session-meta {
   font-size: 12px;
-  color: #909399;
+  color: var(--mist);
   margin-top: 2px;
 }
 
@@ -231,7 +231,7 @@ onMounted(() => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  background: #fff;
+  background: var(--ink-3);
   border-radius: 8px;
   overflow: hidden;
 }
@@ -244,7 +244,7 @@ onMounted(() => {
 
 .empty-tip {
   text-align: center;
-  color: #909399;
+  color: var(--mist);
   margin-top: 80px;
 }
 
@@ -269,6 +269,6 @@ onMounted(() => {
   display: flex;
   gap: 10px;
   padding: 12px;
-  border-top: 1px solid #e4e7ed;
+  border-top: 1px solid var(--line);
 }
 </style>

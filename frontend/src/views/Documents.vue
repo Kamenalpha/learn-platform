@@ -5,7 +5,7 @@
         <el-select v-model="courseId" placeholder="全部课程" clearable style="width: 220px" @change="load">
           <el-option v-for="c in courses" :key="c.course_id" :label="c.course_name" :value="c.course_id" />
         </el-select>
-        <span style="color: #909399; font-size: 13px">共 {{ docs.length }} 个文档</span>
+        <span style="color: var(--mist); font-size: 13px">共 {{ docs.length }} 个文档</span>
       </div>
       <el-button v-if="userStore.isAdmin" type="primary" @click="uploadVisible = true">上传文档</el-button>
     </div>
@@ -49,7 +49,7 @@
           <input type="file" :accept="accept" @change="onFileChange" />
         </el-form-item>
         <el-form-item>
-          <span style="color: #909399; font-size: 12px">
+          <span style="color: var(--mist); font-size: 12px">
             支持 PDF / Word / PPT / TXT,单文件 ≤100MB,上传后自动解析并写入向量库
           </span>
         </el-form-item>
@@ -189,16 +189,16 @@ onMounted(async () => {
 
 .chunk-head {
   font-size: 13px;
-  color: #409eff;
+  color: var(--amber);
   font-weight: 600;
 }
 
 .chunk-body {
-  background: #f5f7fa;
+  background: var(--ink-3);
   border-radius: 6px;
   padding: 10px;
   font-size: 13px;
-  color: #303133;
+  color: var(--paper);
   max-height: 220px;
   overflow-y: auto;
 }

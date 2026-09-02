@@ -35,7 +35,7 @@
         <el-divider content-position="left">引用来源</el-divider>
         <div v-for="(r, i) in parseRef(current.reference)" :key="i" class="source-card">
           [{{ i + 1 }}] {{ r.docTitle }}{{ r.page ? ' · 第' + r.page + '页' : '' }}
-          <div class="pre-wrap" style="color: #909399; margin-top: 4px">{{ r.snippet }}</div>
+          <div class="pre-wrap" style="color: var(--mist); margin-top: 4px">{{ r.snippet }}</div>
         </div>
       </template>
     </el-dialog>

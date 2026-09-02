@@ -144,11 +144,11 @@ onBeforeUnmount(() => {
 .stat-num {
   font-size: 26px;
   font-weight: 700;
-  color: #303133;
+  color: var(--paper);
 }
 
 .stat-label {
-  color: #909399;
+  color: var(--mist);
   font-size: 13px;
   margin-top: 4px;
 }

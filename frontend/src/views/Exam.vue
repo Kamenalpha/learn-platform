@@ -248,7 +248,7 @@ onMounted(async () => {
 }
 
 .q-list .q-item {
-  border: 1px solid #ebeef5;
+  border: 1px solid var(--line);
   border-radius: 8px;
   padding: 12px;
   margin-bottom: 10px;
@@ -260,20 +260,20 @@ onMounted(async () => {
 }
 
 .q-opts {
-  color: #606266;
+  color: var(--mist);
   font-size: 13px;
   margin-bottom: 6px;
 }
 
 .q-answer {
-  color: #909399;
+  color: var(--mist);
   font-size: 12px;
 }
 
 .result-score {
   font-size: 20px;
   font-weight: 700;
-  color: #409eff;
+  color: var(--amber);
   margin-bottom: 12px;
 }
 </style>

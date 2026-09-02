@@ -81,7 +81,7 @@ onMounted(load)
 }
 
 .stat-card {
-  border: 1px solid #ebeef5;
+  border: 1px solid var(--line);
   border-radius: 8px;
   padding: 16px;
   margin-bottom: 12px;
@@ -91,11 +91,11 @@ onMounted(load)
 .stat-value {
   font-size: 22px;
   font-weight: 700;
-  color: #409eff;
+  color: var(--amber);
 }
 
 .stat-label {
-  color: #909399;
+  color: var(--mist);
   font-size: 12px;
   margin-top: 4px;
 }

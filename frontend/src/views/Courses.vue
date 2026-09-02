@@ -10,9 +10,9 @@
         <el-card shadow="hover" class="course-card" @click="goDocs(c)">
           <div style="display: flex; justify-content: space-between; align-items: center">
             <span style="font-size: 16px; font-weight: 600">{{ c.course_name }}</span>
-            <span style="color: #409eff">{{ c.doc_count }} 个文档</span>
+            <span style="color: var(--amber)">{{ c.doc_count }} 个文档</span>
           </div>
-          <p style="color: #909399; font-size: 13px; min-height: 38px">{{ c.description }}</p>
+          <p style="color: var(--mist); font-size: 13px; min-height: 38px">{{ c.description }}</p>
           <div v-if="userStore.isAdmin" style="text-align: right" @click.stop>
             <el-button size="small" @click="openEdit(c)">编辑</el-button>
             <el-button size="small" type="danger" plain @click="removeCourse(c)">删除</el-button>

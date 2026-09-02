@@ -165,7 +165,7 @@ onMounted(load)
 }
 
 .plan-card {
-  border: 1px solid #ebeef5;
+  border: 1px solid var(--line);
   border-radius: 8px;
   padding: 14px;
   margin-bottom: 12px;
@@ -173,7 +173,7 @@ onMounted(load)
 }
 
 .plan-card:hover {
-  border-color: #409eff;
+  border-color: var(--amber);
   box-shadow: 0 2px 12px rgba(0, 0, 0, .06);
 }
 
@@ -184,13 +184,13 @@ onMounted(load)
 }
 
 .plan-goal {
-  color: #606266;
+  color: var(--mist);
   font-size: 13px;
   margin-top: 8px;
 }
 
 .plan-date {
-  color: #909399;
+  color: var(--mist);
   font-size: 12px;
   margin-top: 6px;
 }
@@ -215,12 +215,12 @@ onMounted(load)
 }
 
 .task-item.done {
-  color: #909399;
+  color: var(--mist);
   text-decoration: line-through;
 }
 
 .task-date {
-  color: #909399;
+  color: var(--mist);
   font-size: 12px;
   flex: 1;
   text-align: right;

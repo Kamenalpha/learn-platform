@@ -190,13 +190,13 @@ onMounted(load)
 }
 
 .post-content {
-  background: #f5f7fa;
+  background: var(--ink-3);
   padding: 12px;
   border-radius: 8px;
 }
 
 .post-meta {
-  color: #909399;
+  color: var(--mist);
   font-size: 13px;
   margin-top: 10px;
 }
@@ -216,7 +216,7 @@ onMounted(load)
 }
 
 .author {
-  color: #409eff;
+  color: var(--amber);
   font-weight: 600;
 }
 

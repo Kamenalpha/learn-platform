@@ -55,7 +55,7 @@
                 </span>
               </template>
             </el-tree>
-            <div v-if="chapterTree.length === 0" style="color:#909399;font-size:12px;padding:12px">暂无章节,可在下方新建</div>
+            <div v-if="chapterTree.length === 0" style="color:var(--mist);font-size:12px;padding:12px">暂无章节,可在下方新建</div>
           </div>
           <div class="add-node">
             <el-input v-model="newChapterName" size="small" placeholder="新增章节名" style="width: calc(100% - 84px)">
@@ -111,7 +111,7 @@
         <el-form-item label="文件">
           <input type="file" :accept="accept" @change="onFileChange" />
         </el-form-item>
-        <div style="color:#909399;font-size:12px;line-height:1.5">
+        <div style="color:var(--mist);font-size:12px;line-height:1.5">
           支持 PDF / Word / PPT / TXT,≤100MB;上传后自动解析入库(扫描件走 OCR)。扫描件需平台已配置 OCR 服务,否则会解析为空。
         </div>
       </el-form>
@@ -379,7 +379,8 @@ onMounted(async () => {
 }
 
 .course-card {
-  border: 1px solid #ebeef5;
+  background: var(--ink-2);
+  border: 1px solid var(--line);
   border-radius: 8px;
   padding: 14px;
   margin-bottom: 12px;
@@ -388,8 +389,8 @@ onMounted(async () => {
 }
 
 .course-card:hover {
-  border-color: #409eff;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, .06);
+  border-color: var(--amber);
+  box-shadow: 0 6px 18px rgba(0, 6, 22, 0.35);
 }
 
 .course-name {
@@ -402,18 +403,19 @@ onMounted(async () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  color: #909399;
+  color: var(--mist);
   font-size: 12px;
 }
 
 .course-desc {
   margin-top: 8px;
-  color: #909399;
+  color: var(--mist);
   font-size: 12px;
 }
 
 .tree-card {
-  border: 1px solid #ebeef5;
+  background: var(--ink-2);
+  border: 1px solid var(--line);
   border-radius: 8px;
   padding: 8px;
   min-height: 220px;
@@ -438,16 +440,16 @@ onMounted(async () => {
 
 .chunk-head {
   font-size: 13px;
-  color: #409eff;
+  color: var(--amber);
   font-weight: 600;
 }
 
 .chunk-body {
-  background: #f5f7fa;
+  background: var(--ink-3);
   border-radius: 6px;
   padding: 10px;
   font-size: 13px;
-  color: #303133;
+  color: var(--paper);
   max-height: 220px;
   overflow-y: auto;
   white-space: pre-wrap;

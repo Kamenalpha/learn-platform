@@ -62,7 +62,7 @@ const renderGraph = async (refresh = false) => {
           edgeLabel: { show: false },
           force: { repulsion: 260, edgeLength: 90 },
           lineStyle: { color: '#aaa', width: 1, curveness: 0.1 },
-          itemStyle: { color: '#409eff' },
+          itemStyle: { color: '#f2b64c' },
           emphasis: { focus: 'adjacency', itemStyle: { color: '#1f6feb' } },
           data: data.nodes.map((n) => ({
             name: n.name,

@@ -32,3 +32,6 @@ logs/
 venv/
 __pycache__/
 *.pyc
+
+# Vite 依赖预构建缓存
+frontend/.vite/
