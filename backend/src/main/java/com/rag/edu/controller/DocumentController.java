@@ -63,6 +63,13 @@ public class DocumentController {
         return Result.ok(documentService.reparse(resourceId, UserContext.userId()));
     }
 
+    /** 设置资料可见性:0私有 1公开(需审核) 2分享 */
+    @PutMapping("/{resourceId}/visibility")
+    public Result<Void> setVisibility(@PathVariable Long resourceId, @RequestParam Integer visibility) {
+        documentService.setVisibility(resourceId, visibility, UserContext.userId());
+        return Result.ok();
+    }
+
     @DeleteMapping("/{resourceId}")
     public Result<Void> delete(@PathVariable Long resourceId) {
         documentService.delete(resourceId, UserContext.userId());

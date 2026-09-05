@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 
 /**
  * 公开内容接口(游客可访问,/api/public/** 在 WebConfig 白名单中):
- * 公开课程来源于用户上传并自主公开(visibility=1),
+ * 公开课程来源于用户上传并自主公开,且须经管理员审核通过(visibility=1 且 audit_status=1),
  * 前端展示时须标注上传者与版权声明("如若侵权,可联系删除")。
  */
 @RestController
@@ -50,6 +50,7 @@ public class PublicController {
     public Result<List<Map<String, Object>>> courses() {
         List<Course> courses = courseMapper.selectList(new LambdaQueryWrapper<Course>()
                 .eq(Course::getVisibility, 1)
+                .eq(Course::getAuditStatus, 1)
                 .orderByDesc(Course::getCreateTime)
                 .last("LIMIT 60"));
 
@@ -58,7 +59,8 @@ public class PublicController {
         Map<Long, String> nicknames = nicknamesOf(
                 courses.stream().map(Course::getOwnerId).filter(Objects::nonNull).collect(Collectors.toSet()));
         Map<Long, Long> docCounts = docResourceMapper.selectList(new LambdaQueryWrapper<DocResource>()
-                        .eq(DocResource::getVisibility, 1)).stream()
+                        .eq(DocResource::getVisibility, 1)
+                        .eq(DocResource::getAuditStatus, 1)).stream()
                 .filter(d -> d.getCourseId() != null)
                 .collect(Collectors.groupingBy(DocResource::getCourseId, Collectors.counting()));
 
@@ -79,12 +81,14 @@ public class PublicController {
     @GetMapping("/courses/{courseId}/docs")
     public Result<List<Map<String, Object>>> courseDocs(@PathVariable Long courseId) {
         Course course = courseMapper.selectById(courseId);
-        if (course == null || course.getVisibility() == null || course.getVisibility() != 1) {
+        if (course == null || course.getVisibility() == null || course.getVisibility() != 1
+                || course.getAuditStatus() == null || course.getAuditStatus() != 1) {
             throw new BizException(404, "课程不存在或未公开");
         }
         List<DocResource> docs = docResourceMapper.selectList(new LambdaQueryWrapper<DocResource>()
                 .eq(DocResource::getCourseId, courseId)
                 .eq(DocResource::getVisibility, 1)
+                .eq(DocResource::getAuditStatus, 1)
                 .orderByDesc(DocResource::getCreateTime));
         Map<Long, String> nicknames = nicknamesOf(
                 docs.stream().map(DocResource::getUserId).filter(Objects::nonNull).collect(Collectors.toSet()));
@@ -105,7 +109,8 @@ public class PublicController {
     @GetMapping("/docs/{resourceId}/preview")
     public Result<Map<String, Object>> docPreview(@PathVariable Long resourceId) {
         DocResource doc = docResourceMapper.selectById(resourceId);
-        if (doc == null || doc.getVisibility() == null || doc.getVisibility() != 1) {
+        if (doc == null || doc.getVisibility() == null || doc.getVisibility() != 1
+                || doc.getAuditStatus() == null || doc.getAuditStatus() != 1) {
             throw new BizException(404, "教材不存在或未公开");
         }
         List<DocChunk> chunks = docChunkMapper.selectList(new LambdaQueryWrapper<DocChunk>()

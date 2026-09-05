@@ -132,6 +132,22 @@ public class DocumentService {
         return ingestService.ingest(resourceId);
     }
 
+    /** 设置资料可见性(归属者或管理员):公开(1)会(重新)进入审核,通过后游客可见 */
+    public void setVisibility(Long resourceId, Integer visibility, Long userId) {
+        DocResource res = resourceMapper.selectById(resourceId);
+        if (res == null) {
+            throw new BizException("资料不存在");
+        }
+        checkOwnerOrAdmin(res, userId);
+        if (visibility == null || visibility < 0 || visibility > 2) {
+            throw new BizException("非法的可见性取值");
+        }
+        res.setVisibility(visibility);
+        // 审核状态由服务端裁定:可见性变更后回到待审核(0)
+        res.setAuditStatus(0);
+        resourceMapper.updateById(res);
+    }
+
     /** 文件预览/下载 */
     public Map<String, Object> loadFile(Long resourceId) {
         DocResource res = resourceMapper.selectById(resourceId);

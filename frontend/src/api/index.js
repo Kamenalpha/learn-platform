@@ -50,6 +50,7 @@ export const api = {
   docDetail: (id) => request.get(`/docs/${id}`),
   reparseDoc: (id) => request.post(`/docs/${id}/reparse`),
   deleteDoc: (id) => request.delete(`/docs/${id}`),
+  setDocVisibility: (id, visibility) => request.put(`/docs/${id}/visibility`, null, { params: { visibility } }),
   // 带鉴权头拉取源文件(blob),用于预览/下载
   fetchDocFile: (id) => request.get(`/docs/${id}/file`, { responseType: 'blob' }),
 
@@ -123,5 +124,10 @@ export const api = {
   qaLogs: (page, size) => request.get('/admin/stats/qa-logs', { params: { page, size } }),
   users: () => request.get('/admin/users'),
   setUserRole: (id, role) => request.put(`/admin/users/${id}/role`, null, { params: { role } }),
-  deleteUser: (id) => request.delete(`/admin/users/${id}`)
+  deleteUser: (id) => request.delete(`/admin/users/${id}`),
+
+  // 内容审核(管理员):公开申请的通过/驳回
+  auditPending: () => request.get('/admin/audit/pending'),
+  auditCourse: (id, action) => request.post(`/admin/audit/course/${id}`, null, { params: { action } }),
+  auditResource: (id, action) => request.post(`/admin/audit/resource/${id}`, null, { params: { action } })
 }

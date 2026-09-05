@@ -37,6 +37,7 @@
             <el-sub-menu v-if="userStore.isAdmin" index="admin">
               <template #title>系统管理</template>
               <el-menu-item index="/admin/stats"><el-icon><DataAnalysis /></el-icon>数据看板</el-menu-item>
+              <el-menu-item index="/admin/review"><el-icon><Stamp /></el-icon>内容审核</el-menu-item>
               <el-menu-item index="/admin/kb"><el-icon><Cpu /></el-icon>知识库管理</el-menu-item>
               <el-menu-item index="/admin/users"><el-icon><User /></el-icon>用户管理</el-menu-item>
             </el-sub-menu>

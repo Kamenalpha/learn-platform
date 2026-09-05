@@ -21,7 +21,7 @@
           <div class="course-card" @click="openCourse(c)">
             <div class="course-name">{{ c.course_name }}</div>
             <div class="course-meta">
-              <el-tag size="small" :type="visTag(c.visibility)">{{ visText(c.visibility) }}</el-tag>
+              <el-tag size="small" :type="visTag(c)">{{ visText(c) }}</el-tag>
               <span>{{ c.doc_count || 0 }} 个资料</span>
             </div>
             <div class="course-desc">{{ c.subject_name || '' }}</div>
@@ -36,7 +36,11 @@
       <div class="detail-head">
         <el-button :icon="ArrowLeft" text @click="closeCourse">返回</el-button>
         <span class="sec-title">{{ selectedCourse.course_name }}</span>
+        <el-tag size="small" :type="visTag(selectedCourse)" style="margin-left: 10px">{{ visText(selectedCourse) }}</el-tag>
         <div style="flex: 1"></div>
+        <el-button v-if="canManageCourse" size="small" :type="courseVisButtonType" plain @click="toggleCoursePublic">
+          {{ courseVisButtonLabel }}
+        </el-button>
         <el-button v-if="userStore.isAdmin" size="small" @click="openCourseDialog(selectedCourse)">编辑</el-button>
         <el-button size="small" type="danger" plain @click="removeCourse(selectedCourse)">删除</el-button>
         <el-button type="primary" size="small" :icon="Upload" @click="uploadVisible = true">上传资料</el-button>
@@ -342,8 +346,62 @@ const removeDoc = (row) => {
 const typeTag = (t) => ({ pdf: 'danger', word: 'primary', ppt: 'warning', txt: 'info' }[t] || 'info')
 const statusTag = (s) => ({ 0: 'info', 1: 'success', 2: 'danger' }[s] || 'info')
 const statusText = (s) => ({ 0: '未解析', 1: '已解析', 2: '解析失败' }[s] || '未知')
-const visTag = (v) => ({ 0: 'info', 1: 'success', 2: 'warning' }[v] || 'info')
-const visText = (v) => ({ 0: '私有', 1: '公开', 2: '分享' }[v] || '未知')
+const visTag = (c) => {
+  if (Number(c?.visibility) === 1) {
+    return Number(c?.audit_status) === 1 ? 'success' : Number(c?.audit_status) === 2 ? 'danger' : 'warning'
+  }
+  return { 0: 'info', 2: 'warning' }[c?.visibility] ?? 'info'
+}
+const visText = (c) => {
+  if (Number(c?.visibility) === 1) {
+    return Number(c?.audit_status) === 1 ? '公开' : Number(c?.audit_status) === 2 ? '未通过' : '待审核'
+  }
+  return { 0: '私有', 2: '分享' }[c?.visibility] ?? '未知'
+}
+
+// 课程公开申请:归属者或管理员可发起,审核通过后游客可见
+const isCourseOwner = computed(() =>
+  selectedCourse.value && userStore.userInfo && selectedCourse.value.owner_id === userStore.userInfo.userId)
+const canManageCourse = computed(() => !!selectedCourse.value && (isCourseOwner.value || userStore.isAdmin))
+const courseVisButtonLabel = computed(() => {
+  const c = selectedCourse.value
+  if (!c) return ''
+  if (Number(c.visibility) !== 1) return '设为公开'
+  return Number(c.audit_status) === 1 ? '取消公开' : '重新提交审核'
+})
+const courseVisButtonType = computed(() => {
+  const c = selectedCourse.value
+  if (!c) return 'primary'
+  if (Number(c.visibility) !== 1) return 'success'
+  return Number(c.audit_status) === 1 ? 'info' : 'warning'
+})
+
+const toggleCoursePublic = async () => {
+  const c = selectedCourse.value
+  const goPublic = Number(c.visibility) !== 1
+  if (goPublic) {
+    try {
+      await ElMessageBox.confirm(
+        '公开后课程将进入平台「公开资源」并接受管理员审核,通过后游客可见;确认提交?',
+        '设为公开', { type: 'info' })
+    } catch (e) { return }
+  }
+  await api.updateCourse({
+    courseId: c.course_id,
+    subjectId: c.subject_id,
+    courseName: c.course_name,
+    description: c.description,
+    visibility: goPublic ? 1 : 0
+  })
+  ElMessage.success(goPublic ? '已提交公开申请,待管理员审核' : '已设为私有')
+  await loadCourses()
+  const fresh = courses.value.find((x) => x.course_id === c.course_id)
+  if (fresh) {
+    selectedCourse.value = fresh
+  } else {
+    closeCourse()
+  }
+}
 
 onMounted(async () => {
   await loadSubjects()

@@ -1,4 +1,4 @@
-# 启动基础设施:MySQL + Chroma(项目 venv)
+﻿# 启动基础设施:MySQL + Chroma(项目 venv)
 # 用法(管理员 PowerShell):
 #   powershell -ExecutionPolicy Bypass -File scripts\start-infra.ps1
 # 说明:

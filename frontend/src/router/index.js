@@ -21,6 +21,7 @@ const routes = [
       { path: 'graph', name: 'Graph', component: () => import('../views/KnowledgeGraph.vue'), meta: { title: '知识图谱' } },
       { path: 'history', name: 'History', component: () => import('../views/History.vue'), meta: { title: '学习历史' } },
       { path: 'admin/stats', name: 'AdminStats', component: () => import('../views/admin/Stats.vue'), meta: { title: '数据看板', admin: true } },
+      { path: 'admin/review', name: 'AdminReview', component: () => import('../views/admin/Review.vue'), meta: { title: '内容审核', admin: true } },
       { path: 'admin/kb', name: 'AdminKb', component: () => import('../views/admin/KbManage.vue'), meta: { title: '知识库管理', admin: true } },
       { path: 'admin/users', name: 'AdminUsers', component: () => import('../views/admin/Users.vue'), meta: { title: '用户管理', admin: true } }
     ]

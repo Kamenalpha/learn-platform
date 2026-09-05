@@ -7,7 +7,7 @@
         </el-select>
         <span style="color: var(--mist); font-size: 13px">共 {{ docs.length }} 个文档</span>
       </div>
-      <el-button v-if="userStore.isAdmin" type="primary" @click="uploadVisible = true">上传文档</el-button>
+      <el-button type="primary" @click="uploadVisible = true">上传文档</el-button>
     </div>
 
     <el-table :data="docs" v-loading="loading" stripe>
@@ -23,13 +23,22 @@
         </template>
       </el-table-column>
       <el-table-column prop="chunkCount" label="分块数" width="90" />
+      <el-table-column label="可见性" width="100">
+        <template #default="{ row }">
+          <el-tag :type="visTag(row)" size="small">{{ visText(row) }}</el-tag>
+        </template>
+      </el-table-column>
       <el-table-column label="上传时间" width="170">
         <template #default="{ row }">{{ formatTime(row.createTime) }}</template>
       </el-table-column>
-      <el-table-column label="操作" width="260">
+      <el-table-column label="操作" width="340">
         <template #default="{ row }">
           <el-button size="small" @click="preview(row)">预览</el-button>
           <el-button v-if="row.fileType === 'pdf'" size="small" @click="openFile(row)">原文件</el-button>
+          <el-button v-if="canManage(row)" size="small" :type="Number(row.visibility) === 1 ? 'warning' : 'success'" plain
+            @click="toggleVisibility(row)">
+            {{ Number(row.visibility) === 1 ? '设为私有' : '设为公开' }}
+          </el-button>
           <el-button v-if="userStore.isAdmin" size="small" type="primary" plain :loading="reparsing === row.docId"
             @click="reparse(row)">重新解析</el-button>
           <el-button v-if="userStore.isAdmin" size="small" type="danger" plain @click="remove(row)">删除</el-button>
@@ -103,10 +112,48 @@ const reparsing = ref(null)
 const load = async () => {
   loading.value = true
   try {
-    docs.value = await api.listDocs(courseId.value || undefined)
+    const list = await api.listDocs(courseId.value || undefined)
+    // 兼容真实接口(resourceId/title)与演示数据(docId/docTitle)两种字段形态
+    docs.value = (list || []).map((d) => ({
+      ...d,
+      docId: d.docId ?? d.resourceId,
+      docTitle: d.docTitle ?? d.title,
+      userId: d.userId,
+      visibility: d.visibility ?? 0,
+      auditStatus: d.auditStatus ?? 0
+    }))
   } finally {
     loading.value = false
   }
+}
+
+// 可见性管理:归属者或管理员可申请公开,审核通过后游客可见
+const canManage = (row) =>
+  userStore.isAdmin || (userStore.userInfo && row.userId === userStore.userInfo.userId)
+const visTag = (row) => {
+  if (Number(row.visibility) === 1) {
+    return Number(row.auditStatus) === 1 ? 'success' : Number(row.auditStatus) === 2 ? 'danger' : 'warning'
+  }
+  return Number(row.visibility) === 2 ? 'warning' : 'info'
+}
+const visText = (row) => {
+  if (Number(row.visibility) === 1) {
+    return Number(row.auditStatus) === 1 ? '公开' : Number(row.auditStatus) === 2 ? '未通过' : '待审核'
+  }
+  return { 0: '私有', 2: '分享' }[Number(row.visibility)] ?? '私有'
+}
+const toggleVisibility = async (row) => {
+  const goPublic = Number(row.visibility) !== 1
+  if (goPublic) {
+    try {
+      await ElMessageBox.confirm(
+        '公开后教材将进入「公开资源」并接受管理员审核,通过后游客可见;确认提交?',
+        '设为公开', { type: 'info' })
+    } catch (e) { return }
+  }
+  await api.setDocVisibility(row.docId, goPublic ? 1 : 0)
+  ElMessage.success(goPublic ? '已提交公开申请,待管理员审核' : '已设为私有')
+  load()
 }
 
 const onFileChange = (e) => {

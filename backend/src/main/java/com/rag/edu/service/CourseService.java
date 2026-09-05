@@ -26,12 +26,21 @@ public class CourseService {
     public void save(Course course, Long userId) {
         // 归属当前用户
         course.setOwnerId(userId);
+        Course db = course.getCourseId() == null ? null : courseMapper.selectById(course.getCourseId());
+        if (db != null && !db.getOwnerId().equals(userId)) {
+            throw new BizException(403, "无权修改该课程");
+        }
+        // 可见性缺省时:新建视为私有,编辑保持原值
         if (course.getVisibility() == null) {
-            course.setVisibility(0);
+            course.setVisibility(db == null ? 0 : db.getVisibility());
         }
-        if (course.getAuditStatus() == null) {
-            course.setAuditStatus(0);
-        }
+        // 审核状态由服务端裁定,不信任前端传值:公开 = (重新)提交审核(0);
+        // 已通过审核且公开状态未改动的课程维持通过(1)
+        boolean keepApproved = db != null
+                && Integer.valueOf(1).equals(db.getVisibility())
+                && Integer.valueOf(1).equals(db.getAuditStatus())
+                && Integer.valueOf(1).equals(course.getVisibility());
+        course.setAuditStatus(keepApproved ? 1 : 0);
         if (course.getCourseId() == null) {
             // 同一用户下课程名不得重复
             Long exists = courseMapper.selectCount(new LambdaQueryWrapper<Course>()
@@ -42,10 +51,6 @@ public class CourseService {
             }
             courseMapper.insert(course);
         } else {
-            Course db = courseMapper.selectById(course.getCourseId());
-            if (db == null || !db.getOwnerId().equals(userId)) {
-                throw new BizException(403, "无权修改该课程");
-            }
             courseMapper.updateById(course);
         }
     }
