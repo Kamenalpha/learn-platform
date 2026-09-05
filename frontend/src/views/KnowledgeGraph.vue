@@ -61,9 +61,9 @@ const renderGraph = async (refresh = false) => {
           edgeSymbol: ['none', 'none'],
           edgeLabel: { show: false },
           force: { repulsion: 260, edgeLength: 90 },
-          lineStyle: { color: '#aaa', width: 1, curveness: 0.1 },
-          itemStyle: { color: '#f2b64c' },
-          emphasis: { focus: 'adjacency', itemStyle: { color: '#1f6feb' } },
+          lineStyle: { color: '#cfccbd', width: 1, curveness: 0.1 },
+          itemStyle: { color: '#2f4fd0' },
+          emphasis: { focus: 'adjacency', itemStyle: { color: '#2440ad' } },
           data: data.nodes.map((n) => ({
             name: n.name,
             // 节点大小随频次变化

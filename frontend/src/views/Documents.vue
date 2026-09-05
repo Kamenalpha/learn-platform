@@ -194,7 +194,7 @@ onMounted(async () => {
 }
 
 .chunk-body {
-  background: var(--ink-3);
+  background: var(--surface-2);
   border-radius: 6px;
   padding: 10px;
   font-size: 13px;

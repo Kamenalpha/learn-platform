@@ -132,7 +132,7 @@ onMounted(load)
 
 .proj-card:hover {
   border-color: var(--amber);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, .06);
+  box-shadow: 0 2px 12px rgba(28, 37, 52, .07);
 }
 
 .proj-title {

@@ -1,19 +1,22 @@
 <template>
   <div class="explore-page">
     <header class="explore-header">
-      <router-link to="/" class="explore-brand"><b>智</b> 学习平台</router-link>
-      <div class="header-actions"><el-button type="primary" round @click="login">登录以解锁完整功能</el-button></div>
+      <router-link to="/" class="explore-brand"><span class="brand-mark">智</span>学习平台</router-link>
+      <div class="header-actions"><el-button type="primary" @click="login">登录以解锁完整功能</el-button></div>
     </header>
     <main>
-      <section class="explore-hero"><p>公开学习资源</p><h1>先探索感兴趣的知识</h1><span>阅读公开教材、查看课程资料，并从这里开始你的学习。</span>
+      <section class="explore-hero">
+        <h1>先探索感兴趣的知识</h1>
+        <span>阅读公开教材、查看课程资料，并从这里开始你的学习。</span>
         <el-input v-model="keyword" size="large" placeholder="搜索课程、教材或知识点" clearable><template #prefix><el-icon><Search /></el-icon></template></el-input>
       </section>
-      <section class="library"><div class="library-head"><div><h2>公开教材库</h2><p>已收录 {{ visibleCourses.length }} 门公开课程</p></div><el-button text type="primary" @click="login">上传自己的资料需登录 <el-icon><Right /></el-icon></el-button></div>
+      <section class="library">
+        <div class="library-head"><div><h2>公开教材库</h2><p>已收录 {{ visibleCourses.length }} 门公开课程</p></div><el-button text type="primary" @click="login">上传自己的资料需登录 <el-icon><Right /></el-icon></el-button></div>
         <div class="filter-row"><el-button v-for="item in filters" :key="item" :type="filter === item ? 'primary' : ''" round @click="filter = item">{{ item }}</el-button></div>
-        <div class="course-grid"><article v-for="course in visibleCourses" :key="course.name" class="public-course"><div class="course-top"><span class="course-icon" :class="course.color"><el-icon><component :is="course.icon" /></el-icon></span><el-tag effect="dark" round>{{ course.subject }}</el-tag></div><h3>{{ course.name }}</h3><p>{{ course.description }}</p><div class="doc-count"><el-icon><Document /></el-icon>{{ course.docs.length }} 份公开教材</div><el-button type="primary" plain @click="openCourse(course)">浏览教材</el-button></article></div>
+        <div class="course-grid"><article v-for="course in visibleCourses" :key="course.name" class="public-course"><div class="course-top"><span class="course-icon" :class="course.color"><el-icon><component :is="course.icon" /></el-icon></span><el-tag effect="plain" round>{{ course.subject }}</el-tag></div><h3>{{ course.name }}</h3><p>{{ course.description }}</p><div class="doc-count"><el-icon><Document /></el-icon>{{ course.docs.length }} 份公开教材</div><el-button type="primary" plain @click="openCourse(course)">浏览教材</el-button></article></div>
         <el-empty v-if="!visibleCourses.length" description="没有找到相关公开课程" />
       </section>
-      <section class="guest-notice"><div><el-icon><Lock /></el-icon><h2>登录后，建立你的专属学习空间</h2><p>上传资料、使用 AI 问答、制定计划、参加模拟考试，以及记录你的学习成长。</p></div><el-button type="primary" size="large" round @click="login">登录 / 注册</el-button></section>
+      <section class="guest-notice"><div><el-icon><Lock /></el-icon><h2>登录后，建立你的专属学习空间</h2><p>上传资料、使用 AI 问答、制定计划、参加模拟考试，以及记录你的学习成长。</p></div><el-button type="primary" size="large" @click="login">登录 / 注册</el-button></section>
     </main>
     <el-drawer v-model="drawer" :title="selected?.name || '公开教材'" size="min(600px, 92vw)"><p class="drawer-intro">以下资料可供游客阅读。登录后可收藏资料、进行智能问答与制定学习计划。</p><div v-for="doc in selected?.docs || []" :key="doc.title" class="doc-item"><div><el-icon><Document /></el-icon><strong>{{ doc.title }}</strong><p>{{ doc.summary }}</p></div><el-button type="primary" plain @click="read(doc)">阅读</el-button></div></el-drawer>
     <el-dialog v-model="reader" :title="currentDoc?.title" width="min(700px, 92vw)"><p class="reading-content">{{ currentDoc?.content }}</p><template #footer><el-button @click="reader = false">关闭</el-button><el-button type="primary" @click="login">登录后继续学习</el-button></template></el-dialog>
@@ -38,5 +41,120 @@ const openCourse = (course) => { selected.value = course; drawer.value = true };
 </script>
 
 <style scoped>
-.explore-page{min-height:100%;background:#071d45;color:#ecf4ff}.explore-header{height:70px;display:flex;align-items:center;justify-content:space-between;max-width:1200px;margin:auto;padding:0 28px}.explore-brand{color:#fff;text-decoration:none;font-size:18px;font-weight:700}.explore-brand b{display:inline-grid;place-items:center;width:30px;height:30px;margin-right:8px;border-radius:8px;background:#4f8cff}.header-actions{display:flex;align-items:center;gap:14px;color:#9fbee9;font-size:13px}.explore-hero{padding:70px 28px 80px;text-align:center;background:radial-gradient(circle at 50% 0,#1b539b,#092958 48%,#071d45 100%)}.explore-hero p{margin:0 0 12px;color:#90baff;font-weight:700}.explore-hero h1{margin:0;font-size:42px;color:#fff}.explore-hero>span{display:block;margin:15px 0 28px;color:#b8cce9}.explore-hero .el-input{max-width:620px}.library{max-width:1140px;margin:auto;padding:56px 28px}.library-head{display:flex;justify-content:space-between;align-items:end}.library-head h2{margin:0;font-size:26px}.library-head p{color:#a5bee0;margin:8px 0 0}.filter-row{display:flex;gap:10px;margin:28px 0}.filter-row :deep(.el-button:not(.el-button--primary)){color:#c7dcff;background:#102f60;border-color:#28548d}.course-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}.public-course{display:flex;flex-direction:column;min-height:280px;padding:21px;border-radius:14px;border:1px solid rgba(155,194,249,.22);background:linear-gradient(145deg,#11376d,#092856)}.course-top{display:flex;justify-content:space-between;align-items:start}.course-icon{display:grid;place-items:center;width:40px;height:40px;border-radius:10px;font-size:20px}.blue{background:#1d4e92;color:#a6c8ff}.purple{background:#46347f;color:#d1bfff}.orange{background:#76501d;color:#ffd078}.green{background:#1a5b55;color:#73e1c8}.public-course h3{margin:18px 0 8px;color:#fff}.public-course p{color:#acc4e4;font-size:13px;line-height:1.65;margin:0}.doc-count{display:flex;align-items:center;gap:6px;margin-top:auto;padding:20px 0 14px;color:#91b7ed;font-size:13px}.public-course>.el-button{align-self:start}.guest-notice{display:flex;align-items:center;justify-content:space-between;gap:25px;padding:44px max(28px,calc((100vw - 1088px)/2));background:#04142f;border-top:1px solid rgba(155,194,249,.15)}.guest-notice>div{position:relative;padding-left:50px}.guest-notice .el-icon{position:absolute;left:0;top:3px;color:#89b6ff;font-size:31px}.guest-notice h2{margin:0;color:#fff;font-size:22px}.guest-notice p{margin:9px 0 0;color:#abc1df}.drawer-intro{color:#62738b;line-height:1.6}.doc-item{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:17px 0;border-bottom:1px solid #e8edf5}.doc-item strong{margin-left:8px}.doc-item p{margin:8px 0 0;color:#7e8a9a;font-size:13px}.reading-content{white-space:pre-wrap;line-height:1.9;color:#344057}@media(max-width:900px){.course-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:600px){.header-actions>span{display:none}.explore-header{padding:0 16px}.explore-hero h1{font-size:33px}.course-grid{grid-template-columns:1fr}.guest-notice{display:block}.guest-notice .el-button{margin-top:20px}.library-head{align-items:start;gap:15px}.library-head .el-button{display:none}}
+.explore-page { min-height: 100%; background: var(--content-bg); color: var(--paper); }
+
+.explore-header {
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 1200px;
+  margin: auto;
+  padding: 0 28px;
+}
+.explore-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--paper);
+  text-decoration: none;
+  font-size: 17px;
+  font-weight: 700;
+}
+.brand-mark {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  background: var(--seal);
+  color: #fff;
+  font-weight: 700;
+  font-size: 16px;
+  box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.28);
+}
+.header-actions { display: flex; align-items: center; gap: 14px; }
+
+.explore-hero {
+  max-width: 1200px;
+  margin: auto;
+  padding: 64px 28px 72px;
+  text-align: left;
+}
+.explore-hero h1 { margin: 0; font-size: clamp(32px, 3.6vw, 44px); color: var(--paper); line-height: 1.3; }
+.explore-hero > span { display: block; margin: 16px 0 30px; color: var(--ink-2); font-size: 15.5px; line-height: 1.8; }
+.explore-hero .el-input { max-width: 560px; }
+
+.library {
+  max-width: 1200px;
+  margin: auto;
+  padding: 20px 28px 72px;
+}
+.library-head { display: flex; justify-content: space-between; align-items: flex-end; }
+.library-head h2 { margin: 0; font-size: 24px; }
+.library-head p { color: var(--ink-3); margin: 8px 0 0; font-size: 13.5px; }
+
+.filter-row { display: flex; gap: 10px; margin: 26px 0; }
+.filter-row :deep(.el-button:not(.el-button--primary)) {
+  color: var(--ink-2);
+  background: var(--surface);
+  border-color: var(--line-strong);
+}
+
+.course-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.public-course {
+  display: flex;
+  flex-direction: column;
+  min-height: 264px;
+  padding: 22px;
+  border-radius: var(--radius-card);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  transition: transform .2s ease, border-color .2s ease;
+}
+.public-course:hover { transform: translateY(-3px); border-color: var(--accent-line); }
+.course-top { display: flex; justify-content: space-between; align-items: start; }
+.course-icon { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 9px; font-size: 19px; }
+.blue { background: var(--accent-wash); color: var(--accent-strong); }
+.purple { background: #f2effb; color: #6a4bc4; }
+.orange { background: var(--gold-wash); color: var(--gold); }
+.green { background: var(--jade-wash); color: var(--jade); }
+.public-course h3 { margin: 18px 0 8px; color: var(--paper); font-size: 16.5px; }
+.public-course p { color: var(--ink-2); font-size: 13.5px; line-height: 1.7; margin: 0; }
+.doc-count { display: flex; align-items: center; gap: 6px; margin-top: auto; padding: 20px 0 14px; color: var(--ink-3); font-size: 13px; }
+.public-course > .el-button { align-self: start; }
+
+.guest-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 25px;
+  padding: 44px max(28px, calc((100vw - 1144px) / 2));
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+}
+.guest-notice > div { position: relative; padding-left: 54px; }
+.guest-notice .el-icon { position: absolute; left: 0; top: 3px; color: var(--accent-strong); font-size: 30px; }
+.guest-notice h2 { margin: 0; color: var(--paper); font-size: 21px; }
+.guest-notice p { margin: 9px 0 0; color: var(--ink-2); line-height: 1.75; }
+
+.drawer-intro { color: var(--ink-2); line-height: 1.7; margin-top: 0; }
+.doc-item { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 17px 0; border-bottom: 1px solid var(--line); }
+.doc-item strong { margin-left: 8px; color: var(--paper); }
+.doc-item p { margin: 8px 0 0; color: var(--ink-2); font-size: 13px; line-height: 1.65; }
+.reading-content { white-space: pre-wrap; line-height: 1.9; color: var(--paper); }
+
+@media (max-width: 900px) { .course-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 600px) {
+  .explore-header { padding: 0 16px; }
+  .explore-hero { padding: 44px 20px 52px; }
+  .explore-hero h1 { font-size: 30px; }
+  .library { padding: 8px 20px 52px; }
+  .course-grid { grid-template-columns: 1fr; }
+  .guest-notice { display: block; padding: 36px 20px; }
+  .guest-notice .el-button { margin-top: 20px; }
+  .library-head { align-items: start; gap: 15px; }
+  .library-head .el-button { display: none; }
+}
 </style>

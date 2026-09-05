@@ -1,81 +1,73 @@
 <template>
-  <div class="login-bg">
-    <div class="bg-glow" aria-hidden="true"></div>
-    <svg class="bg-graph" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-      <g stroke="rgba(159,180,216,0.14)" stroke-width="1">
-        <line x1="120" y1="110" x2="300" y2="200" />
-        <line x1="300" y1="200" x2="520" y2="150" />
-        <line x1="520" y1="150" x2="660" y2="280" />
-        <line x1="300" y1="200" x2="260" y2="420" />
-        <line x1="660" y1="280" x2="500" y2="450" />
-        <line x1="260" y1="420" x2="500" y2="450" />
-        <line x1="120" y1="110" x2="260" y2="420" />
-        <line x1="520" y1="150" x2="500" y2="450" />
-        <line x1="660" y1="280" x2="180" y2="330" />
-        <line x1="180" y1="330" x2="260" y2="420" />
-        <line x1="300" y1="200" x2="180" y2="330" />
-      </g>
-      <g fill="rgba(245,241,232,0.07)" stroke="rgba(242,182,76,0.3)" stroke-width="1.2">
-        <circle cx="120" cy="110" r="14" />
-        <circle cx="300" cy="200" r="18" />
-        <circle cx="520" cy="150" r="12" />
-        <circle cx="660" cy="280" r="15" />
-        <circle cx="260" cy="420" r="13" />
-        <circle cx="500" cy="450" r="11" />
-        <circle cx="180" cy="330" r="10" />
-      </g>
-      <g fill="rgba(242,182,76,0.5)" font-size="11" font-weight="700" font-family="ui-monospace,monospace">
-        <text x="420" y="90">[1]</text>
-        <text x="130" y="250">[2]</text>
-        <text x="600" y="450">[3]</text>
-      </g>
-    </svg>
-
-    <el-card class="login-card">
-      <div class="brand">
+  <div class="login-page">
+    <!-- 左:品牌面板 -->
+    <aside class="brand-panel">
+      <router-link class="brand" to="/">
         <span class="brand-mark">智</span>
-        <div class="brand-text">
-          <h2>学习平台</h2>
-          <p>基于 RAG 的智能学习平台</p>
-        </div>
+        <span class="brand-name">学习平台</span>
+      </router-link>
+      <div class="brand-body">
+        <h1>让每一次回答，<br>都有出处可循。</h1>
+        <p>基于 RAG 的智能学习平台：上传你的教材，AI 的回答附带可追溯的原文引用，学习有据可依。</p>
+        <ul class="brand-points">
+          <li><span class="point-dot"></span>资料入库，按课程与知识点整理</li>
+          <li><span class="point-dot"></span>问答溯源，引用直达教材原文</li>
+          <li><span class="point-dot"></span>计划、测验与画像，记录成长</li>
+        </ul>
       </div>
-      <el-tabs v-model="tab" stretch>
-        <el-tab-pane label="登录" name="login">
-          <el-form :model="loginForm" @keyup.enter="doLogin">
-            <el-form-item>
-              <el-input v-model="loginForm.username" placeholder="用户名" size="large">
-                <template #prefix><el-icon><User /></el-icon></template>
-              </el-input>
-            </el-form-item>
-            <el-form-item>
-              <el-input v-model="loginForm.password" type="password" show-password placeholder="密码" size="large">
-                <template #prefix><el-icon><Lock /></el-icon></template>
-              </el-input>
-            </el-form-item>
-            <el-button type="primary" size="large" style="width: 100%" :loading="loading" @click="doLogin">
-              登 录
-            </el-button>
-            <p class="tip">默认账号:admin / admin123(管理员),student / 123456(学生)</p>
-          </el-form>
-        </el-tab-pane>
-        <el-tab-pane label="注册" name="register">
-          <el-form :model="regForm">
-            <el-form-item>
-              <el-input v-model="regForm.username" placeholder="用户名(3-20位)" size="large" />
-            </el-form-item>
-            <el-form-item>
-              <el-input v-model="regForm.nickname" placeholder="昵称(选填)" size="large" />
-            </el-form-item>
-            <el-form-item>
-              <el-input v-model="regForm.password" type="password" show-password placeholder="密码(6-32位)" size="large" />
-            </el-form-item>
-            <el-button type="primary" size="large" style="width: 100%" :loading="loading" @click="doRegister">
-              注 册
-            </el-button>
-          </el-form>
-        </el-tab-pane>
-      </el-tabs>
-    </el-card>
+      <p class="brand-foot">纸页 · 靛青 — 像阅读一本自己的书</p>
+    </aside>
+
+    <!-- 右:表单 -->
+    <main class="form-panel">
+      <div class="form-box">
+        <div class="form-switch" role="tablist">
+          <button
+            v-for="t in [['login', '登录'], ['register', '注册']]"
+            :key="t[0]"
+            type="button"
+            class="switch-btn"
+            :class="{ active: tab === t[0] }"
+            role="tab"
+            :aria-selected="tab === t[0]"
+            @click="tab = t[0]"
+          >{{ t[1] }}</button>
+        </div>
+
+        <form v-if="tab === 'login'" class="form" @submit.prevent="doLogin">
+          <div class="field">
+            <label for="login-username">用户名</label>
+            <el-input id="login-username" v-model="loginForm.username" placeholder="输入用户名" size="large" autocomplete="username" />
+          </div>
+          <div class="field">
+            <label for="login-password">密码</label>
+            <el-input id="login-password" v-model="loginForm.password" type="password" show-password placeholder="输入密码" size="large" autocomplete="current-password" />
+          </div>
+          <el-button type="primary" size="large" class="submit" native-type="submit" :loading="loading">
+            登 录
+          </el-button>
+          <p class="tip">演示账号：admin / admin123（管理员）· student / 123456（学生）</p>
+        </form>
+
+        <form v-else class="form" @submit.prevent="doRegister">
+          <div class="field">
+            <label for="reg-username">用户名</label>
+            <el-input id="reg-username" v-model="regForm.username" placeholder="3-20 位字符" size="large" autocomplete="username" />
+          </div>
+          <div class="field">
+            <label for="reg-nickname">昵称<span class="optional">（选填）</span></label>
+            <el-input id="reg-nickname" v-model="regForm.nickname" placeholder="将显示在社区与问答中" size="large" />
+          </div>
+          <div class="field">
+            <label for="reg-password">密码</label>
+            <el-input id="reg-password" v-model="regForm.password" type="password" show-password placeholder="6-32 位" size="large" autocomplete="new-password" />
+          </div>
+          <el-button type="primary" size="large" class="submit" native-type="submit" :loading="loading">
+            注 册
+          </el-button>
+        </form>
+      </div>
+    </main>
   </div>
 </template>
 
@@ -127,7 +119,7 @@ const doRegister = async () => {
   loading.value = true
   try {
     await api.register({ ...regForm })
-    ElMessage.success('注册成功,请登录')
+    ElMessage.success('注册成功，请登录')
     loginForm.username = regForm.username
     tab.value = 'login'
   } finally {
@@ -137,98 +129,144 @@ const doRegister = async () => {
 </script>
 
 <style scoped>
-.login-bg {
+.login-page {
   height: 100%;
+  display: grid;
+  grid-template-columns: minmax(380px, 46%) 1fr;
+  background: var(--content-bg);
+}
+
+/* —— 左:品牌面板(墨色,整页唯一的沉浸色面) —— */
+.brand-panel {
   position: relative;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
+  flex-direction: column;
+  padding: 40px 48px;
   background:
-    radial-gradient(ellipse at 78% 30%, rgba(242, 182, 76, 0.08) 0%, rgba(242, 182, 76, 0) 46%),
-    linear-gradient(180deg, #0d1f42 0%, #0b1830 55%, #0a1528 100%);
+    radial-gradient(ellipse 90% 60% at 110% 110%, rgba(47, 79, 208, 0.22) 0%, rgba(47, 79, 208, 0) 60%),
+    #141d30;
+  color: #eef1f7;
 }
-
-.bg-glow {
-  position: absolute;
-  width: 460px;
-  height: 460px;
-  right: -120px;
-  top: -120px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(242, 182, 76, 0.14) 0%, rgba(242, 182, 76, 0) 66%);
-}
-
-.bg-graph {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  opacity: 0.9;
-}
-
-.login-card {
-  width: 400px;
-  border-radius: 14px;
-  position: relative;
-  z-index: 1;
-  background: rgba(14, 28, 57, 0.72) !important;
-  backdrop-filter: blur(14px);
-  border: 1px solid var(--line) !important;
-  box-shadow: 0 24px 60px rgba(0, 6, 22, 0.6);
-  padding: 8px 6px;
-}
-
 .brand {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 14px;
-  margin: 6px 0 20px;
-  padding-bottom: 18px;
-  border-bottom: 1px solid var(--line);
+  gap: 10px;
+  color: #fff;
+  text-decoration: none;
+  width: fit-content;
 }
 .brand-mark {
-  width: 46px;
-  height: 46px;
-  flex: none;
+  width: 34px;
+  height: 34px;
   display: grid;
   place-items: center;
-  border-radius: 10px;
-  background: var(--amber);
-  color: var(--ink);
-  font-weight: 800;
-  font-size: 24px;
-  font-family: 'Noto Serif SC', 'Songti SC', 'STSong', serif;
-  box-shadow: 0 0 24px rgba(242, 182, 76, 0.35);
+  border-radius: 7px;
+  background: var(--seal);
+  color: #fff;
+  font-weight: 700;
+  font-size: 19px;
+  box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.28);
 }
-.brand-text h2 {
+.brand-name { font-weight: 700; font-size: 17px; }
+
+.brand-body { margin: auto 0; max-width: 420px; }
+.brand-body h1 {
+  margin: 0 0 18px;
+  font-size: clamp(30px, 2.8vw, 40px);
+  line-height: 1.35;
+  letter-spacing: .01em;
+  color: #fff;
+}
+.brand-body > p {
   margin: 0;
-  font-size: 21px;
-  color: var(--paper);
-  letter-spacing: 2px;
+  color: #aeb9d2;
+  line-height: 1.9;
+  font-size: 15px;
 }
-.brand-text p {
-  margin: 5px 0 0;
-  color: var(--mist);
+.brand-points {
+  list-style: none;
+  margin: 34px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 14px;
+}
+.brand-points li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #ccd4e6;
+  font-size: 14px;
+}
+.point-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--accent);
+  box-shadow: 0 0 0 3px rgba(47, 79, 208, 0.25);
+}
+.brand-foot {
+  margin: 0;
+  color: #5f6c8c;
   font-size: 12.5px;
-  letter-spacing: .5px;
+  letter-spacing: .08em;
 }
 
-.login-card :deep(.el-tabs__item) {
-  color: var(--mist);
+/* —— 右:表单 —— */
+.form-panel {
+  display: grid;
+  place-items: center;
+  padding: 40px 24px;
 }
-.login-card :deep(.el-tabs__item.is-active) {
-  color: var(--amber);
+.form-box { width: min(380px, 100%); }
+
+.form-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  margin-bottom: 30px;
+  background: var(--surface-2);
+  border-radius: 10px;
 }
-.login-card :deep(.el-tabs__active-bar) {
-  background-color: var(--amber);
+.switch-btn {
+  height: 38px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--ink-2);
+  font-size: 14.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s, color .15s, box-shadow .15s;
+}
+.switch-btn.active {
+  background: var(--surface);
+  color: var(--accent-strong);
+  box-shadow: 0 1px 3px rgba(28, 37, 52, 0.1);
 }
 
+.form { display: grid; gap: 18px; }
+.field { display: grid; gap: 7px; }
+.field label {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--paper);
+}
+.field .optional { color: var(--ink-3); font-weight: 400; }
+
+.submit { width: 100%; margin-top: 6px; }
 .tip {
-  color: var(--mist);
-  font-size: 12px;
+  margin: 4px 0 0;
+  color: var(--ink-3);
+  font-size: 12.5px;
   text-align: center;
-  margin: 14px 0 0;
+  line-height: 1.7;
+}
+
+/* —— 响应式 —— */
+@media (max-width: 860px) {
+  .login-page { grid-template-columns: 1fr; }
+  .brand-panel { display: none; }
 }
 </style>

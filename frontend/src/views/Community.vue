@@ -190,7 +190,7 @@ onMounted(load)
 }
 
 .post-content {
-  background: var(--ink-3);
+  background: var(--surface-2);
   padding: 12px;
   border-radius: 8px;
 }
@@ -203,7 +203,7 @@ onMounted(load)
 
 .answer-item,
 .comment-item {
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--line);
   padding: 10px 0;
   font-size: 14px;
 }

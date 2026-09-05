@@ -71,7 +71,7 @@
         <p style="color: var(--amber); font-weight: 600">
           {{ currentSource.docTitle }}{{ currentSource.page ? ' · 第' + currentSource.page + '页' : '' }}
         </p>
-        <div class="pre-wrap" style="background: var(--ink-3); padding: 12px; border-radius: 6px">
+        <div class="pre-wrap" style="background: var(--surface-2); padding: 12px; border-radius: 6px">
           {{ currentSource.snippet }}
         </div>
       </template>
@@ -194,7 +194,7 @@ onMounted(() => {
 
 .session-panel {
   width: 230px;
-  background: var(--ink-3);
+  background: var(--surface-2);
   border-radius: 8px;
   padding: 12px;
   overflow-y: auto;
@@ -210,7 +210,7 @@ onMounted(() => {
 
 .session-item:hover,
 .session-item.active {
-  background: rgba(242, 182, 76, 0.12);
+  background: var(--accent-wash);
 }
 
 .session-title {
@@ -231,7 +231,7 @@ onMounted(() => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  background: var(--ink-3);
+  background: var(--surface-2);
   border-radius: 8px;
   overflow: hidden;
 }

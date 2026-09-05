@@ -54,7 +54,8 @@ const initPos = () => {
     ball.y = saved.ball.y
   } else {
     ball.x = vw - BALL_W - 24
-    ball.y = vh - BALL_H - 34
+    // 默认悬在底部输入区上方,避免遮挡页脚操作按钮
+    ball.y = vh - BALL_H - 118
   }
   if (saved?.dlg) {
     dlg.x = saved.dlg.x
@@ -164,20 +165,21 @@ onBeforeUnmount(() => { /* listeners cleaned in up() */ })
   align-items: center;
   justify-content: center;
   gap: 4px;
-  border-radius: 22px;
-  background: linear-gradient(135deg, #f7c368 0%, var(--amber) 100%);
-  color: var(--ink);
-  font-weight: 700;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
   font-size: 13px;
-  box-shadow: 0 8px 26px rgba(242, 182, 76, 0.4);
+  box-shadow: 0 6px 18px rgba(36, 64, 173, 0.35);
   cursor: grab;
   user-select: none;
   pointer-events: auto;
-  transition: box-shadow .25s, transform .25s;
+  transition: box-shadow .2s, transform .2s;
 }
 .fc-ball:hover {
   transform: translateY(-2px);
-  box-shadow: 0 12px 32px rgba(242, 182, 76, 0.5);
+  background: var(--accent-strong);
+  box-shadow: 0 10px 24px rgba(36, 64, 173, 0.42);
 }
 .fc-ball:active {
   cursor: grabbing;
@@ -187,11 +189,11 @@ onBeforeUnmount(() => { /* listeners cleaned in up() */ })
   position: fixed;
   display: flex;
   flex-direction: column;
-  border-radius: 14px;
+  border-radius: var(--radius-card);
   overflow: hidden;
-  background: var(--ink-2);
+  background: var(--surface);
   border: 1px solid var(--line);
-  box-shadow: 0 18px 60px rgba(0, 6, 22, 0.65);
+  box-shadow: var(--shadow-pop);
   pointer-events: auto;
   min-width: 340px;
   min-height: 400px;
@@ -203,7 +205,7 @@ onBeforeUnmount(() => { /* listeners cleaned in up() */ })
   justify-content: space-between;
   height: 42px;
   padding: 0 12px 0 14px;
-  background: linear-gradient(135deg, #152a55 0%, #101f42 100%);
+  background: var(--surface);
   border-bottom: 1px solid var(--line);
   cursor: move;
   user-select: none;
@@ -213,10 +215,9 @@ onBeforeUnmount(() => { /* listeners cleaned in up() */ })
   display: flex;
   align-items: center;
   gap: 6px;
-  color: var(--amber);
+  color: var(--accent-strong);
   font-weight: 600;
   font-size: 14px;
-  letter-spacing: 1px;
 }
 .fc-close {
   display: grid;
@@ -224,13 +225,13 @@ onBeforeUnmount(() => { /* listeners cleaned in up() */ })
   width: 24px;
   height: 24px;
   border-radius: 6px;
-  color: var(--mist);
+  color: var(--ink-3);
   cursor: pointer;
-  transition: background .2s, color .2s;
+  transition: background .15s, color .15s;
 }
 .fc-close:hover {
-  background: rgba(242, 182, 76, 0.14);
-  color: var(--amber);
+  background: var(--surface-2);
+  color: var(--paper);
 }
 
 .fc-body {
@@ -238,6 +239,7 @@ onBeforeUnmount(() => { /* listeners cleaned in up() */ })
   min-height: 0;
   overflow: hidden;
   padding: 12px;
+  background: var(--content-bg);
 }
 .fc-body :deep(.chat-wrap) {
   height: 100% !important;
@@ -258,11 +260,11 @@ onBeforeUnmount(() => { /* listeners cleaned in up() */ })
   bottom: 4px;
   width: 9px;
   height: 9px;
-  border-right: 2px solid rgba(159, 180, 216, 0.5);
-  border-bottom: 2px solid rgba(159, 180, 216, 0.5);
+  border-right: 2px solid var(--line-strong);
+  border-bottom: 2px solid var(--line-strong);
   border-radius: 0 0 4px 0;
 }
 .fc-resize:hover::after {
-  border-color: var(--amber);
+  border-color: var(--accent);
 }
 </style>

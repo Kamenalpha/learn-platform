@@ -174,7 +174,7 @@ onMounted(load)
 
 .plan-card:hover {
   border-color: var(--amber);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, .06);
+  box-shadow: 0 2px 12px rgba(28, 37, 52, .07);
 }
 
 .plan-title {
@@ -211,7 +211,7 @@ onMounted(load)
   align-items: center;
   gap: 8px;
   padding: 8px 4px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--line);
 }
 
 .task-item.done {

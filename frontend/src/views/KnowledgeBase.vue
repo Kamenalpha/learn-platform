@@ -379,7 +379,7 @@ onMounted(async () => {
 }
 
 .course-card {
-  background: var(--ink-2);
+  background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 14px;
@@ -390,7 +390,7 @@ onMounted(async () => {
 
 .course-card:hover {
   border-color: var(--amber);
-  box-shadow: 0 6px 18px rgba(0, 6, 22, 0.35);
+  box-shadow: 0 6px 18px rgba(28, 37, 52, 0.14);
 }
 
 .course-name {
@@ -414,7 +414,7 @@ onMounted(async () => {
 }
 
 .tree-card {
-  background: var(--ink-2);
+  background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 8px;
@@ -445,7 +445,7 @@ onMounted(async () => {
 }
 
 .chunk-body {
-  background: var(--ink-3);
+  background: var(--surface-2);
   border-radius: 6px;
   padding: 10px;
   font-size: 13px;

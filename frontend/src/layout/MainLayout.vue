@@ -6,6 +6,7 @@
           <span class="brand-mark">智</span>
           <span class="brand-name">学习平台</span>
         </router-link>
+        <span class="header-divider" aria-hidden="true"></span>
         <nav class="top-nav">
           <el-menu
             mode="horizontal"
@@ -42,12 +43,11 @@
         </nav>
       </div>
       <div class="header-right">
-        <span class="page-title">{{ $route.meta.title || '' }}</span>
         <el-dropdown @command="onCommand">
           <span class="user-info">
             <el-avatar :size="30" class="user-avatar">{{ userStore.userInfo?.nickname?.[0] || 'U' }}</el-avatar>
             <span class="user-name">{{ userStore.userInfo?.nickname || userStore.userInfo?.username }}</span>
-            <el-tag size="small" :type="userStore.isAdmin ? 'warning' : 'info'" effect="dark" round>
+            <el-tag size="small" :type="userStore.isAdmin ? 'warning' : 'info'" effect="plain" round>
               {{ userStore.isAdmin ? '管理员' : '学生' }}
             </el-tag>
           </span>
@@ -93,18 +93,17 @@ const onCommand = (command) => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: rgba(13, 25, 48, 0.92);
-  backdrop-filter: blur(10px);
+  background: var(--surface);
   border-bottom: 1px solid var(--line);
   height: var(--header-height);
-  padding: 0 18px;
+  padding: 0 20px;
   flex-shrink: 0;
 }
 
 .header-left {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 4px;
   min-width: 0;
 }
 
@@ -113,34 +112,40 @@ const onCommand = (command) => {
   align-items: center;
   gap: 9px;
   height: 40px;
-  padding: 0 10px;
+  padding: 0 8px;
   text-decoration: none;
-  border-radius: 8px;
-  transition: background .25s;
+  border-radius: var(--radius-ctl);
+  transition: opacity .2s;
   flex-shrink: 0;
 }
-.logo:hover {
-  background: rgba(245, 241, 232, 0.05);
-}
+.logo:hover { opacity: .8; }
+
+/* 品牌记号:朱砂印章 */
 .brand-mark {
   width: 28px;
   height: 28px;
   display: grid;
   place-items: center;
   border-radius: 6px;
-  background: var(--amber);
-  color: var(--ink);
-  font-weight: 800;
+  background: var(--seal);
+  color: #fff;
+  font-weight: 700;
   font-size: 16px;
-  font-family: 'Noto Serif SC', 'Songti SC', 'STSong', serif;
-  box-shadow: 0 0 16px rgba(242, 182, 76, 0.3);
+  box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.28);
 }
 .brand-name {
   color: var(--paper);
   font-weight: 700;
   font-size: 15px;
-  letter-spacing: 1px;
   white-space: nowrap;
+}
+
+.header-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--line);
+  margin: 0 10px;
+  flex-shrink: 0;
 }
 
 .top-nav {
@@ -150,34 +155,34 @@ const onCommand = (command) => {
   overflow-y: hidden;
 }
 .top-nav::-webkit-scrollbar { height: 4px; }
-.top-nav::-webkit-scrollbar-thumb { background: rgba(159, 180, 216, 0.2); }
+.top-nav::-webkit-scrollbar-thumb { background: var(--line-strong); }
 
 .top-menu {
   background: transparent;
   border-bottom: none !important;
-  --el-menu-item-height: 54px;
-  --el-menu-active-color: var(--amber);
+  --el-menu-item-height: var(--header-height);
+  --el-menu-active-color: var(--accent-strong);
 }
 .top-menu :deep(.el-menu-item),
 .top-menu :deep(.el-sub-menu__title) {
-  color: var(--mist);
+  color: var(--ink-2);
   font-size: 14px;
   font-weight: 500;
-  border-radius: 8px 8px 0 0;
-  transition: color .25s, background .25s;
+  border-bottom: 2px solid transparent;
+  transition: color .15s;
 }
 .top-menu :deep(.el-menu-item:hover),
 .top-menu :deep(.el-sub-menu__title:hover) {
-  color: var(--paper);
-  background: rgba(245, 241, 232, 0.06);
+  color: var(--accent-strong);
+  background: transparent;
 }
-.top-menu :deep(.el-menu-item.is-active) {
-  color: var(--amber);
+.top-menu :deep(.el-menu-item.is-active),
+.top-menu :deep(.el-sub-menu.is-active > .el-sub-menu__title) {
+  color: var(--accent-strong);
   font-weight: 600;
+  border-bottom-color: var(--accent);
 }
-.top-menu :deep(.el-sub-menu__icon-arrow) {
-  color: var(--mist);
-}
+.top-menu :deep(.el-sub-menu__icon-arrow) { color: var(--ink-3); }
 
 .header-right {
   display: flex;
@@ -185,42 +190,34 @@ const onCommand = (command) => {
   gap: 16px;
   flex-shrink: 0;
 }
-.page-title {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--paper);
-  letter-spacing: 1px;
-  opacity: 0.9;
-}
 .user-info {
   display: flex;
   align-items: center;
   gap: 8px;
   cursor: pointer;
   outline: none;
+  border-radius: 999px;
+  padding: 3px 6px;
+  transition: background .15s;
 }
+.user-info:hover { background: var(--surface-2); }
 .user-avatar {
-  background: rgba(242, 182, 76, 0.18);
-  color: var(--amber);
+  background: var(--accent-wash);
+  color: var(--accent-strong);
   font-weight: 600;
 }
 .user-name {
   color: var(--paper);
   font-size: 14px;
 }
-.user-info :deep(.el-tag) {
-  border: none;
-}
+.user-info :deep(.el-tag) { border: none; }
 
 .main {
-  padding: 18px;
-  background:
-    radial-gradient(ellipse at 85% -10%, rgba(242, 182, 76, 0.05) 0%, rgba(242, 182, 76, 0) 45%),
-    var(--content-bg);
+  padding: 20px;
+  background: var(--content-bg);
 }
 
 @media (max-width: 900px) {
-  .page-title { display: none; }
   .brand-name { display: none; }
   .user-name { display: none; }
 }

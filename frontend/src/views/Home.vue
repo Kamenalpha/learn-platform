@@ -7,145 +7,113 @@
       </router-link>
       <nav class="nav-links">
         <a href="#features">平台模块</a>
-        <a href="#about">学习路径</a>
+        <a href="#path">学习路径</a>
+        <router-link to="/explore">公开资源</router-link>
       </nav>
       <div class="auth-actions">
         <el-button text @click="goLogin">登录</el-button>
-        <el-button type="primary" round @click="goRegister">免费注册</el-button>
+        <el-button type="primary" @click="goRegister">免费注册</el-button>
       </div>
     </header>
 
     <main>
+      <!-- 首屏:左文案 + 右真实回答预览(引用溯源签名) -->
       <section class="hero">
-        <div class="hero-bg" aria-hidden="true">
-          <svg class="graph-bg" viewBox="0 0 800 560" preserveAspectRatio="xMidYMid slice">
-            <defs>
-              <radialGradient id="nodeGlow" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stop-color="#F2B64C" stop-opacity="0.55" />
-                <stop offset="100%" stop-color="#F2B64C" stop-opacity="0" />
-              </radialGradient>
-            </defs>
-            <g stroke="rgba(159,180,216,0.16)" stroke-width="1">
-              <line x1="560" y1="60" x2="640" y2="150" />
-              <line x1="560" y1="60" x2="730" y2="70" />
-              <line x1="560" y1="60" x2="420" y2="95" />
-              <line x1="640" y1="150" x2="730" y2="70" />
-              <line x1="640" y1="150" x2="770" y2="185" />
-              <line x1="640" y1="150" x2="430" y2="190" />
-              <line x1="640" y1="150" x2="700" y2="280" />
-              <line x1="730" y1="70" x2="770" y2="185" />
-              <line x1="420" y1="95" x2="430" y2="190" />
-              <line x1="770" y1="185" x2="700" y2="280" />
-              <line x1="770" y1="185" x2="640" y2="400" />
-              <line x1="430" y1="190" x2="520" y2="300" />
-              <line x1="430" y1="190" x2="540" y2="460" />
-              <line x1="700" y1="280" x2="640" y2="400" />
-              <line x1="700" y1="280" x2="520" y2="300" />
-              <line x1="700" y1="280" x2="770" y2="420" />
-              <line x1="640" y1="400" x2="770" y2="420" />
-              <line x1="640" y1="400" x2="540" y2="460" />
-              <line x1="520" y1="300" x2="540" y2="460" />
-              <line x1="540" y1="460" x2="430" y2="470" />
-              <line x1="770" y1="420" x2="430" y2="470" />
-            </g>
-            <g>
-              <circle cx="640" cy="150" r="34" fill="url(#nodeGlow)" />
-              <circle cx="700" cy="280" r="30" fill="url(#nodeGlow)" />
-              <circle cx="560" cy="60" r="26" fill="url(#nodeGlow)" />
-              <circle cx="640" cy="400" r="30" fill="url(#nodeGlow)" />
-            </g>
-            <g fill="rgba(245,241,232,0.07)" stroke="rgba(242,182,76,0.35)" stroke-width="1.2">
-              <circle cx="560" cy="60" r="12" />
-              <circle cx="730" cy="70" r="15" />
-              <circle cx="420" cy="95" r="11" />
-              <circle cx="640" cy="150" r="18" />
-              <circle cx="770" cy="185" r="12" />
-              <circle cx="430" cy="190" r="13" />
-              <circle cx="700" cy="280" r="14" />
-              <circle cx="520" cy="300" r="13" />
-              <circle cx="640" cy="400" r="15" />
-              <circle cx="770" cy="420" r="11" />
-              <circle cx="540" cy="460" r="12" />
-              <circle cx="430" cy="470" r="11" />
-            </g>
-            <g fill="rgba(159,180,216,0.5)" font-size="11" font-family="'PingFang SC','Microsoft YaHei',sans-serif">
-              <text x="560" y="38">数学</text>
-              <text x="730" y="48">图形学</text>
-              <text x="420" y="73">数据结构</text>
-              <text x="640" y="128">图像增强</text>
-              <text x="770" y="163">均衡化</text>
-              <text x="430" y="168">计算机</text>
-              <text x="700" y="258">渲染管线</text>
-              <text x="520" y="278">社区</text>
-              <text x="640" y="378">视频编码</text>
-              <text x="770" y="398">语言</text>
-              <text x="540" y="438">出题</text>
-              <text x="430" y="448">学习闭环</text>
-            </g>
-            <g fill="rgba(242,182,76,0.55)" font-size="11" font-weight="700" font-family="ui-monospace,monospace">
-              <text x="495" y="145">[1]</text>
-              <text x="610" y="330">[2]</text>
-              <text x="720" y="480">[3]</text>
-            </g>
-          </svg>
-        </div>
         <div class="hero-copy">
-          <p class="eyebrow">RAG 驱动的个性化学习</p>
-          <h1>把每一次学习，<br><span class="accent">沉淀成自己的知识</span></h1>
-          <p class="hero-description">上传教材、构建知识库、与 AI 深度对话——从学习计划到模拟测验，完成清晰连贯的学习闭环。</p>
+          <h1>把每一次学习，<br>沉淀成自己的知识。</h1>
+          <p class="hero-description">上传教材构建知识库，AI 回答附带原文引用——从计划到测验的完整学习闭环。</p>
           <div class="hero-actions">
-            <el-button type="primary" size="large" round @click="goExplore">开始学习 <el-icon><Right /></el-icon></el-button>
-            <el-button size="large" round @click="goLogin">已有账号，去登录</el-button>
+            <el-button type="primary" size="large" @click="goExplore">开始探索<el-icon><Right /></el-icon></el-button>
+            <el-button size="large" class="ghost-btn" @click="goLogin">已有账号，去登录</el-button>
           </div>
         </div>
+
         <div class="hero-visual" aria-hidden="true">
-          <div class="lamp-glow"></div>
+          <div class="answer-card">
+            <div class="answer-q">直方图均衡化的作用是什么？</div>
+            <div class="answer-body">
+              直方图均衡化通过灰度累积分布函数拉伸图像的动态范围，从而提升整体对比度。
+            </div>
+            <div class="answer-cites">
+              <span class="cite-chip"><el-icon :size="12"><Document /></el-icon>《图像增强与直方图均衡化》· PDF</span>
+              <span class="cite-chip"><el-icon :size="12"><Document /></el-icon>《数字图像处理基础》· 课件</span>
+            </div>
+            <div class="answer-source">
+              <span class="source-dot"></span>
+              <span>回答依据 2 份已入库教材，可点击引用查看原文</span>
+            </div>
+          </div>
         </div>
       </section>
 
-      <section id="features" class="features section">
-        <p class="eyebrow centered">一站式学习工具</p>
-        <h2>围绕学习全过程设计的核心模块</h2>
-        <p class="section-intro">不止是问答工具，而是将资料、练习、计划与成长记录连接起来的学习空间。</p>
-        <div class="feature-grid">
-          <article v-for="feature in features" :key="feature.title" class="feature-card">
-            <div class="feature-icon"><el-icon><component :is="feature.icon" /></el-icon></div>
-            <h3>{{ feature.title }}</h3><p>{{ feature.description }}</p>
+      <!-- 平台模块:非均质 bento -->
+      <section id="features" class="features">
+        <div class="section-head">
+          <h2>围绕学习全过程设计的核心模块</h2>
+          <p>不止是问答工具，而是将资料、练习、计划与成长记录连接起来的学习空间。</p>
+        </div>
+        <div class="bento">
+          <article class="cell cell-wide">
+            <h3>AI 智能问答</h3>
+            <p>基于你的资料进行多轮对话，答案附带可追溯引用。</p>
+            <div class="mini-cites">
+              <span class="cite-chip"><el-icon :size="12"><Document /></el-icon>引用 · 教材原文</span>
+              <span class="cite-chip"><el-icon :size="12"><Document /></el-icon>引用 · 课程笔记</span>
+            </div>
+          </article>
+          <article class="cell cell-tint">
+            <h3>我的知识库</h3>
+            <p>按课程与知识点整理教材，支持文档上传、解析与检索。</p>
+          </article>
+          <article class="cell">
+            <h3>学习计划</h3>
+            <p>拆解目标与任务，完成打卡并养成稳定的学习节奏。</p>
+          </article>
+          <article class="cell">
+            <h3>出题模拟</h3>
+            <p>依据教材自动出题、限时作答，并获取智能评分反馈。</p>
+          </article>
+          <article class="cell cell-dark">
+            <h3>学习画像</h3>
+            <p>汇总学习时长、进度与薄弱点，明确下一步方向。</p>
+          </article>
+          <article class="cell cell-band">
+            <div class="band-copy">
+              <h3>学习社区</h3>
+              <p>围绕课程和知识点交流讨论，在分享中共同成长。</p>
+            </div>
+            <span class="band-note">课程问答 · 笔记分享 · 同伴互助</span>
           </article>
         </div>
       </section>
 
-      <section id="about" class="process section">
-        <div class="process-copy">
-          <p class="eyebrow">从资料到能力</p>
-          <h2>让学习过程看得见</h2>
-          <p class="section-intro left">平台通过 RAG 技术理解你的课程资料，让 AI 的每一次回答都有可追溯的依据。</p>
+      <!-- 学习路径:横向三步,序号承载顺序信息 -->
+      <section id="path" class="path">
+        <div class="section-head">
+          <h2>从资料到能力，让学习过程看得见</h2>
+          <p>平台通过 RAG 技术理解你的课程资料，让 AI 的每一次回答都有可追溯的依据。</p>
         </div>
-        <div class="steps">
-          <div v-for="(step, index) in steps" :key="step.title" class="step">
-            <span class="step-num">{{ `0${index + 1}` }}</span>
-            <div class="step-body"><h3>{{ step.title }}</h3><p>{{ step.description }}</p></div>
-          </div>
-        </div>
+        <ol class="path-steps">
+          <li v-for="(step, index) in steps" :key="step.title">
+            <span class="step-num">{{ index + 1 }}</span>
+            <div class="step-body">
+              <h3>{{ step.title }}</h3>
+              <p>{{ step.description }}</p>
+            </div>
+          </li>
+        </ol>
       </section>
     </main>
+
     <footer>学习平台 · 让每一份努力都有积累</footer>
   </div>
 </template>
 
 <script setup>
 import { useRouter } from 'vue-router'
-import { Calendar, Collection, EditPen, MagicStick, Right, Share, TrendCharts } from '@element-plus/icons-vue'
+import { Document, Right } from '@element-plus/icons-vue'
 
 const router = useRouter()
-const features = [
-  { title: '我的知识库', description: '按课程与知识点整理教材，支持文档上传、解析与检索。', icon: Collection },
-  { title: 'AI 智能问答', description: '基于你的资料进行多轮对话，答案附带可追溯引用。', icon: MagicStick },
-  { title: '学习计划', description: '拆解目标与任务，完成打卡并养成稳定的学习节奏。', icon: Calendar },
-  { title: '出题模拟', description: '依据教材自动出题、限时作答，并获取智能评分反馈。', icon: EditPen },
-  { title: '学习画像', description: '汇总学习时长、进度与薄弱点，明确下一步方向。', icon: TrendCharts },
-  { title: '学习社区', description: '围绕课程和知识点交流讨论，在分享中共同成长。', icon: Share }
-]
 const steps = [
   { title: '建立专属资料库', description: '上传教材与笔记，按你的课程结构归类。' },
   { title: '获取有依据的帮助', description: '向 AI 提问，快速定位资料中的关键内容。' },
@@ -157,225 +125,269 @@ const goExplore = () => router.push('/explore')
 </script>
 
 <style scoped>
-/* ========== Design tokens : 深夜书房 · 知识索引卡 ========== */
 .home-page {
-  /* Element Plus primary override */
-  --el-color-primary: #5b7cfa;
-  --el-color-primary-light-3: #7d96fb;
-  --el-color-primary-light-5: #9fb1fc;
-  --el-color-primary-light-7: #c1ccfd;
-  --el-color-primary-light-8: #d2dafd;
-  --el-color-primary-light-9: #e4e9fe;
-  --el-color-primary-dark-2: #4963c8;
-
-  /* palette */
-  --ink: #0b1830;        /* 墨蓝夜空 */
-  --ink-2: #132a52;      /* 深蓝 */
-  --ink-3: #1b3564;      /* 略亮的蓝 */
-  --paper: #f5f1e8;      /* 纸张暖白 */
-  --amber: #f2b64c;      /* 琥珀高亮（唯一强调） */
-  --mist: #9fb4d8;       /* 雾蓝次级文字 */
-  --line: rgba(159, 180, 216, 0.16);
-
   min-height: 100%;
   color: var(--paper);
-  background: var(--ink);
-  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', 'Segoe UI', sans-serif;
+  background: var(--content-bg);
 }
 
-/* ========== Topbar ========== */
+/* ========== 顶栏 ========== */
 .topbar {
-  height: 76px;
+  height: 64px;
   max-width: 1200px;
   margin: auto;
   padding: 0 28px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid var(--line);
 }
-.brand { display: inline-flex; align-items: center; gap: 11px; color: var(--paper); text-decoration: none; }
+.brand { display: inline-flex; align-items: center; gap: 10px; color: var(--paper); text-decoration: none; }
 .brand-mark {
-  width: 34px; height: 34px;
-  display: grid; place-items: center;
-  border-radius: 6px;
-  background: var(--amber);
-  color: var(--ink);
-  font-weight: 800;
-  font-size: 19px;
-  font-family: 'Noto Serif SC', 'Songti SC', 'STSong', serif;
-  box-shadow: 0 0 22px rgba(242, 182, 76, 0.35);
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  background: var(--seal);
+  color: #fff;
+  font-weight: 700;
+  font-size: 18px;
+  box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.28);
 }
-.brand-name { font-weight: 700; font-size: 18px; letter-spacing: 1px; }
-.nav-links { display: flex; gap: 34px; }
-.nav-links a { color: var(--mist); text-decoration: none; font-size: 14px; transition: color .25s; }
-.nav-links a:hover { color: var(--paper); }
+.brand-name { font-weight: 700; font-size: 17px; }
+.nav-links { display: flex; gap: 30px; }
+.nav-links a { color: var(--ink-2); text-decoration: none; font-size: 14px; transition: color .15s; }
+.nav-links a:hover { color: var(--accent-strong); }
 .auth-actions { display: flex; gap: 10px; }
-.auth-actions :deep(.el-button.is-text) { color: var(--mist); }
+.auth-actions :deep(.el-button.is-text) { color: var(--ink-2); }
 
-/* ========== Hero ========== */
+/* ========== 首屏 ========== */
 .hero {
-  position: relative;
-  min-height: 560px;
-  padding: 92px max(28px, calc((100vw - 1144px) / 2));
+  max-width: 1200px;
+  margin: auto;
+  padding: 64px 28px 84px;
+  display: grid;
+  grid-template-columns: minmax(360px, 1fr) minmax(380px, 0.9fr);
+  align-items: center;
+  gap: 72px;
+}
+.hero-copy h1 {
+  font-size: clamp(34px, 3.8vw, 50px);
+  line-height: 1.32;
+  margin: 0;
+  color: var(--paper);
+  animation: rise .6s cubic-bezier(.16, 1, .3, 1) both;
+}
+.hero-description {
+  color: var(--ink-2);
+  line-height: 1.85;
+  font-size: 16px;
+  margin: 22px 0 32px;
+  max-width: 460px;
+  animation: rise .6s cubic-bezier(.16, 1, .3, 1) .08s both;
+}
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  animation: rise .6s cubic-bezier(.16, 1, .3, 1) .16s both;
+}
+.hero-actions .el-icon { margin-left: 6px; }
+.ghost-btn {
+  color: var(--paper);
+  background: var(--surface);
+  border-color: var(--line-strong);
+}
+.ghost-btn:hover {
+  color: var(--accent-strong);
+  border-color: var(--accent-line);
+  background: var(--accent-wash);
+}
+
+/* —— 签名:真实回答卡片 —— */
+.hero-visual { animation: rise .7s cubic-bezier(.16, 1, .3, 1) .12s both; }
+.answer-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-pop);
+  padding: 22px 22px 18px;
+}
+.answer-q {
+  display: inline-block;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--accent-strong);
+  background: var(--accent-wash);
+  border-radius: 999px;
+  padding: 6px 14px;
+}
+.answer-body {
+  margin-top: 16px;
+  font-size: 15px;
+  line-height: 1.85;
+  color: var(--paper);
+}
+.answer-cites { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.cite-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--accent-strong);
+  background: var(--accent-wash);
+  border: 1px solid var(--accent-wash-2);
+  border-radius: 6px;
+  padding: 4px 9px;
+}
+.answer-source {
   display: flex;
   align-items: center;
-  gap: 64px;
-  overflow: hidden;
-  background:
-    radial-gradient(ellipse at 82% 40%, rgba(242, 182, 76, 0.07) 0%, rgba(242, 182, 76, 0) 48%),
-    linear-gradient(180deg, #0d1f42 0%, #0b1830 60%, #0a1528 100%);
-  border-bottom: 1px solid var(--line);
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--line-strong);
+  color: var(--ink-3);
+  font-size: 12.5px;
 }
-.hero-bg {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  pointer-events: none;
-}
-.graph-bg {
-  display: block;
-  width: 100%;
-  height: 100%;
-  opacity: 0.95;
-  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 1) 62%, rgba(0, 0, 0, 0) 100%);
-  -webkit-mask-image: linear-gradient(180deg, rgba(0, 0, 0, 1) 62%, rgba(0, 0, 0, 0) 100%);
-}
-.hero-copy { max-width: 540px; z-index: 1; }
-.eyebrow {
-  color: var(--amber);
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 3px;
-  margin: 0 0 18px;
-  text-transform: uppercase;
-}
-.hero h1 {
-  font-family: 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', 'STSong', serif;
-  font-size: clamp(38px, 4.2vw, 54px);
-  line-height: 1.3;
-  margin: 0;
-  letter-spacing: 1px;
-  color: var(--paper);
-  font-weight: 700;
-}
-.hero h1 .accent { color: var(--amber); }
-.hero-description { color: var(--mist); line-height: 1.85; font-size: 16px; margin: 26px 0 34px; max-width: 470px; }
-.hero-actions { display: flex; flex-wrap: wrap; gap: 14px; }
-.hero-actions .el-icon { margin-left: 7px; }
-.hero-actions :deep(.el-button:not(.el-button--primary)) {
-  color: var(--paper);
-  background: rgba(245, 241, 232, 0.06);
-  border-color: rgba(245, 241, 232, 0.28);
+.source-dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--jade);
 }
 
-/* ========== 图谱氛围光晕 ========== */
-.hero-visual { position: relative; flex: 1; height: 400px; min-width: 360px; z-index: 1; }
-.lamp-glow {
-  position: absolute;
-  inset: -60px 0 0 -30px;
-  pointer-events: none;
-  background: radial-gradient(ellipse at 70% 36%, rgba(242, 182, 76, 0.15) 0%, rgba(242, 182, 76, 0.04) 44%, rgba(242, 182, 76, 0) 70%);
+@keyframes rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
 }
 
-/* ========== Features ========== */
-.features { background: linear-gradient(180deg, #0a1528 0%, #0e2147 100%); border-bottom: 1px solid var(--line); }
-.section { max-width: 1144px; margin: auto; padding: 92px 28px; text-align: center; }
-.features.section { max-width: none; padding-left: max(28px, calc((100vw - 1088px) / 2)); padding-right: max(28px, calc((100vw - 1088px) / 2)); }
-.centered { margin-bottom: 14px; }
-.section h2 {
-  font-family: 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', 'STSong', serif;
-  font-size: 31px;
+/* ========== 平台模块 bento ========== */
+.features {
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+  padding: 84px 28px;
+}
+.section-head { max-width: 640px; margin: 0 auto 44px; text-align: center; }
+.section-head h2 {
+  font-size: clamp(24px, 2.4vw, 30px);
   margin: 0;
-  letter-spacing: 1px;
   color: var(--paper);
 }
-.section-intro { max-width: 620px; color: var(--mist); margin: 16px auto 46px; line-height: 1.8; }
-.section-intro.left { margin-left: 0; }
-.feature-grid {
-  max-width: 980px;
+.section-head p { color: var(--ink-2); margin: 14px 0 0; line-height: 1.8; }
+
+.bento {
+  max-width: 1040px;
   margin: 0 auto;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 22px;
-  text-align: left;
+  gap: 14px;
 }
-.feature-card {
-  position: relative;
-  background: rgba(245, 241, 232, 0.035);
+.cell {
+  background: var(--content-bg);
   border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 26px 26px 24px;
-  transition: transform .3s ease, border-color .3s ease, background .3s ease;
+  border-radius: var(--radius-card);
+  padding: 24px;
+  transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
 }
-.feature-card::before {
+.cell:hover {
+  transform: translateY(-3px);
+  border-color: var(--accent-line);
+  box-shadow: var(--shadow-card);
+}
+.cell h3 { margin: 0 0 9px; font-size: 16.5px; color: var(--paper); }
+.cell p { color: var(--ink-2); line-height: 1.75; font-size: 13.5px; margin: 0; }
+.cell-wide { grid-column: span 2; display: flex; flex-direction: column; }
+.mini-cites { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; padding-top: 18px; }
+.cell-tint { background: var(--accent-wash); border-color: var(--accent-wash-2); }
+.cell-tint h3 { color: var(--accent-strong); }
+.cell-dark { background: #141d30; border-color: #141d30; }
+.cell-dark h3 { color: #fff; }
+.cell-dark p { color: #aeb9d2; }
+.cell-band {
+  grid-column: span 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 20px 24px;
+  background: var(--accent-wash);
+  border-color: var(--accent-wash-2);
+}
+.cell-band h3 { margin: 0 0 4px; color: var(--accent-strong); }
+.cell-band p { margin: 0; }
+.band-note {
+  flex: none;
+  color: var(--ink-3);
+  font-size: 13px;
+  border-left: 1px solid var(--accent-wash-2);
+  padding-left: 24px;
+}
+
+/* ========== 学习路径 ========== */
+.path {
+  max-width: 1040px;
+  margin: auto;
+  padding: 84px 28px 96px;
+}
+.path-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 40px;
+  counter-reset: step;
+}
+.path-steps li {
+  position: relative;
+  padding-top: 26px;
+  border-top: 2px solid var(--line-strong);
+}
+.path-steps li::before {
   content: '';
   position: absolute;
-  top: 0; left: 0; right: 0;
+  top: -2px;
+  left: 0;
+  width: 56px;
   height: 2px;
-  background: var(--amber);
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform .35s cubic-bezier(.2, .8, .2, 1);
+  background: var(--accent);
 }
-.feature-card:hover { transform: translateY(-5px); background: rgba(245, 241, 232, 0.06); border-color: rgba(159, 180, 216, 0.34); }
-.feature-card:hover::before { transform: scaleX(1); }
-.feature-icon {
-  width: 44px; height: 44px;
-  display: grid; place-items: center;
-  border-radius: 8px;
-  background: rgba(242, 182, 76, 0.10);
-  border: 1px solid rgba(242, 182, 76, 0.22);
-  color: var(--amber);
-  font-size: 21px;
-  margin-bottom: 18px;
-}
-.feature-card h3 { font-size: 17px; margin: 0 0 9px; color: var(--paper); letter-spacing: .5px; }
-.feature-card p { color: var(--mist); line-height: 1.7; font-size: 13.5px; margin: 0; }
-
-/* ========== Process ========== */
-.process {
-  display: grid;
-  grid-template-columns: 0.9fr 1.1fr;
-  align-items: center;
-  gap: 80px;
-  text-align: left;
-  background: linear-gradient(180deg, #0e2147 0%, #0a1528 100%);
-  max-width: none;
-  padding-left: max(28px, calc((100vw - 1088px) / 2));
-  padding-right: max(28px, calc((100vw - 1088px) / 2));
-}
-.steps { display: grid; gap: 22px; }
-.step { display: flex; gap: 18px; align-items: flex-start; }
 .step-num {
-  flex: none;
-  width: 42px; height: 42px;
-  display: grid; place-items: center;
-  border-radius: 50%;
-  border: 1px solid rgba(242, 182, 76, 0.45);
-  color: var(--amber);
-  font-weight: 700;
-  font-size: 15px;
-  background: rgba(242, 182, 76, 0.08);
+  display: block;
+  font-size: 34px;
+  font-weight: 800;
+  color: var(--accent-strong);
+  line-height: 1;
+  margin-bottom: 14px;
+  font-variant-numeric: tabular-nums;
 }
-.step-body h3 { margin: 2px 0 8px; font-size: 16.5px; color: var(--paper); letter-spacing: .4px; }
-.step-body p { color: var(--mist); margin: 0; line-height: 1.7; font-size: 14px; }
+.step-body h3 { margin: 0 0 8px; font-size: 16.5px; color: var(--paper); }
+.step-body p { color: var(--ink-2); margin: 0; line-height: 1.75; font-size: 14px; }
 
-footer { text-align: center; padding: 28px; color: #6c82a8; font-size: 13px; border-top: 1px solid var(--line); background: #081224; }
-
-/* ========== Responsive ========== */
-@media (max-width: 900px) {
-  .feature-grid { grid-template-columns: repeat(2, 1fr); }
-  .process { grid-template-columns: 1fr; gap: 44px; }
+footer {
+  text-align: center;
+  padding: 26px;
+  color: var(--ink-3);
+  font-size: 13px;
+  border-top: 1px solid var(--line);
+  background: var(--surface);
 }
-@media (max-width: 760px) {
+
+/* ========== 响应式 ========== */
+@media (max-width: 960px) {
+  .hero { grid-template-columns: 1fr; gap: 44px; padding-top: 44px; }
+  .bento { grid-template-columns: repeat(2, 1fr); }
+  .cell-wide { grid-column: span 2; }
+  .path-steps { grid-template-columns: 1fr; gap: 30px; }
+}
+@media (max-width: 640px) {
   .topbar { padding: 0 18px; }
   .nav-links { display: none; }
-  .hero { padding: 56px 24px; min-height: auto; }
-  .hero-visual { display: none; }
-  .feature-grid { grid-template-columns: 1fr; max-width: 420px; }
-  .process { padding: 60px 24px; }
-  .steps { margin-top: 6px; }
+  .hero { padding: 32px 20px 60px; }
+  .bento { grid-template-columns: 1fr; }
+  .cell-wide { grid-column: span 1; }
   .auth-actions .el-button:first-child { display: none; }
 }
 </style>

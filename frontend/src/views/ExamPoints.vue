@@ -58,7 +58,7 @@ onMounted(async () => {
 
 <style scoped>
 .result-box {
-  background: var(--ink-3);
+  background: var(--surface-2);
   border-radius: 8px;
   padding: 16px;
   min-height: 200px;
