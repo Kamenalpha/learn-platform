@@ -76,7 +76,7 @@ mysql -u root -p < sql/upgrade_guest_public_news.sql   # 老库升级:补 knowle
 > 依赖清单:
 > - **MySQL**(3306):服务 `mysql8046`,库 `learn_platform`(需先建库)。
 > - **Chroma**(8000):本项目用 Python 虚拟环境 `.venv` 安装 `chromadb` 并运行(见 `scripts/start-infra.ps1`);数据在 `data/chroma`。
-> - **Redis**(6379):运行时依赖(对话上下文/图谱缓存/配额),未装则相关功能降级;可装 Memurai 或 WSL redis。
+> - **Redis**(6379):运行时依赖(对话上下文/图谱缓存/配额)。本机已装**项目便携版** `tools/redis`(5.0.14,配置 `tools/redis/redis.conf`),`start-infra.ps1` 会自动启动;也可自装 Memurai 或 WSL redis。
 > - **API Key**:设置 `LLM_API_KEY` / `EMBED_API_KEY`(AI 调用必需)。
 
 ### 3. 启动后端

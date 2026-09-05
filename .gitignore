@@ -35,3 +35,8 @@ __pycache__/
 
 # Vite 依赖预构建缓存
 frontend/.vite/
+
+# 本地工具(便携版 Redis 等)
+
+# 本地工具(便携版 Redis 等)
+tools/
