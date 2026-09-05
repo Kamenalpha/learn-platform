@@ -46,7 +46,8 @@
           <el-button type="primary" size="large" class="submit" native-type="submit" :loading="loading">
             登 录
           </el-button>
-          <p class="tip">演示账号：admin / admin123（管理员）· student / 123456（学生）</p>
+          <p class="tip">演示账号：admin / admin123（管理员）· student / 123456（学习者）</p>
+          <p class="guest-tip">只想先看看？<router-link to="/explore">逛逛公开资源</router-link> · <router-link to="/news">知识资讯</router-link>，无需登录即可学习。</p>
         </form>
 
         <form v-else class="form" @submit.prevent="doRegister">
@@ -263,6 +264,15 @@ const doRegister = async () => {
   text-align: center;
   line-height: 1.7;
 }
+.guest-tip {
+  margin: 10px 0 0;
+  color: var(--ink-3);
+  font-size: 12.5px;
+  text-align: center;
+  line-height: 1.7;
+}
+.guest-tip a { color: var(--accent-strong); text-decoration: none; }
+.guest-tip a:hover { text-decoration: underline; }
 
 /* —— 响应式 —— */
 @media (max-width: 860px) {

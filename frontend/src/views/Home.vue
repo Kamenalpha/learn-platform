@@ -8,6 +8,7 @@
       <nav class="nav-links">
         <a href="#features">平台模块</a>
         <a href="#path">学习路径</a>
+        <router-link to="/news">知识资讯</router-link>
         <router-link to="/explore">公开资源</router-link>
       </nav>
       <div class="auth-actions">
@@ -21,7 +22,12 @@
       <section class="hero">
         <div class="hero-copy">
           <h1>把每一次学习，<br>沉淀成自己的知识。</h1>
-          <p class="hero-description">上传教材构建知识库，AI 回答附带原文引用——从计划到测验的完整学习闭环。</p>
+          <p class="hero-description">面向所有学习者的全学科知识平台：未登录也能浏览公开课程、阅读每日知识资讯；登录后上传教材构建个人知识库，AI 回答附带原文引用。</p>
+          <div class="hero-badges">
+            <span class="badge"><el-icon><User /></el-icon>游客可学 · 无需登录</span>
+            <span class="badge"><el-icon><Bell /></el-icon>每日 9:00 更新知识资讯</span>
+            <span class="badge"><el-icon><Reading /></el-icon>全学科 · 不止计算机</span>
+          </div>
           <div class="hero-actions">
             <el-button type="primary" size="large" @click="goExplore">开始探索<el-icon><Right /></el-icon></el-button>
             <el-button size="large" class="ghost-btn" @click="goLogin">已有账号，去登录</el-button>
@@ -50,7 +56,7 @@
       <section id="features" class="features">
         <div class="section-head">
           <h2>围绕学习全过程设计的核心模块</h2>
-          <p>不止是问答工具，而是将资料、练习、计划与成长记录连接起来的学习空间。</p>
+          <p>面向所有学习者、覆盖各学科领域：将资料、练习、计划与成长记录连接起来的一站式学习空间。</p>
         </div>
         <div class="bento">
           <article class="cell cell-wide">
@@ -105,13 +111,16 @@
       </section>
     </main>
 
-    <footer>学习平台 · 让每一份努力都有积累</footer>
+    <footer>
+      <p>学习平台 · 让每一份努力都有积累</p>
+      <p class="footer-note">公开内容由用户上传公开与每日资讯抓取生成，均标明来源，版权归原作者所有；如若侵权，可联系删除。</p>
+    </footer>
   </div>
 </template>
 
 <script setup>
 import { useRouter } from 'vue-router'
-import { Document, Right } from '@element-plus/icons-vue'
+import { Bell, Document, Reading, Right, User } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const steps = [
@@ -193,6 +202,25 @@ const goExplore = () => router.push('/explore')
   animation: rise .6s cubic-bezier(.16, 1, .3, 1) .16s both;
 }
 .hero-actions .el-icon { margin-left: 6px; }
+.hero-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: -6px 0 30px;
+  animation: rise .6s cubic-bezier(.16, 1, .3, 1) .12s both;
+}
+.hero-badges .badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--ink-2);
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  padding: 6px 13px;
+}
+.hero-badges .el-icon { color: var(--accent-strong); }
 .ghost-btn {
   color: var(--paper);
   background: var(--surface);
@@ -368,12 +396,14 @@ const goExplore = () => router.push('/explore')
 
 footer {
   text-align: center;
-  padding: 26px;
+  padding: 24px;
   color: var(--ink-3);
   font-size: 13px;
   border-top: 1px solid var(--line);
   background: var(--surface);
 }
+footer p { margin: 0; }
+footer .footer-note { margin-top: 8px; font-size: 12px; opacity: .85; }
 
 /* ========== 响应式 ========== */
 @media (max-width: 960px) {

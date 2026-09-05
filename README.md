@@ -1,8 +1,10 @@
 # 通用多学科智能学习平台 (Graduation Project)
 
-面向多学科的**一站式智能学习平台**:用户上传自己的教材并自主分类,定制 AI 助手学习,制定学习计划,在社区交流,做模拟测试(自动出题 + AI 评分),并用 AI 辅助完成课程设计项目——形成"学-练-测-交流-做项目"的完整学习闭环。核心引擎为 **RAG + 大模型**,回答带**可溯源引用**。
+面向**所有学习者**的**一站式智能学习平台**(不止计算机学科):任何人不登录也可浏览**公开课程**与**每日知识资讯**;登录后可上传自己的教材并自主分类,定制 AI 助手学习,制定学习计划,在社区交流,做模拟测试(自动出题 + AI 评分),并用 AI 辅助完成课程设计项目——形成"学-练-测-交流-做项目"的完整学习闭环。核心引擎为 **RAG + 大模型**,回答带**可溯源引用**。
 
 > 技术架构:后端 Spring Boot + Spring AI,前端 Vue3 + Element Plus(响应式,PC/移动一套代码),数据库 MySQL + Chroma(向量) + Redis。
+
+**版权说明**:平台公开内容来源于①用户上传并自主公开,②系统每日 9:00 自动抓取的公开资讯(RSS/Atom)。所有内容均标明来源与作者,版权归原作者所有,仅作学习交流;**如若侵权,可联系平台管理员删除**。
 
 ## 一、技术栈
 
@@ -22,7 +24,8 @@
 ## 二、功能模块
 
 **用户端**
-- **我的知识库**:学科→课程→章节→知识点 四级分类(用户自建)+ 资料上传(PDF/Word/PPT/TXT,扫描件自动 OCR)、解析、分块、向量入库、预览/重解析/删除;资源可见性(私有/公开/分享)。
+- **公开内容(游客可用,无需登录)**:「公开资源」浏览用户上传并公开的课程/教材(含试读);「知识资讯」由系统**每天早上 9:00** 自动抓取公开资讯源(RSS/Atom,默认知乎日报/Solidot/少数派/36氪/阮一峰博客,可用 `NEWS_RSS_FEEDS` 覆盖)入库并**强制标注来源**,管理员可手动触发抓取。个人知识库、AI 问答等个性化功能登录后可用。
+- **我的知识库**:学科→课程→章节→知识点 四级分类(用户自建)+ 资料上传(PDF/Word/PPT/TXT,扫描件自动 OCR)、解析、分块、向量入库、预览/重解析/删除;资源可见性(私有/公开/分享),公开后进入「公开资源」。
 - **AI 助手**:可创建多个助手,每个绑定课程库(知识隔离),自定义系统提示词/模型/温度/风格/上下文轮数/引用;多轮对话带 [n] 可溯源引用。
 - **学习计划**:目标→阶段→任务(可关联课程/章节/知识点),完成打卡、连续天数、提醒;完成任务自动打卡。
 - **社区**:帖子/文章 + 问答(提问→回答→采纳最佳答案),评论/点赞,可挂课程/知识点;内容可举报/审核。
@@ -40,11 +43,11 @@ RAG/
 │   └── src/main/java/com/rag/edu/
 │       ├── config/         # Web/JWT/MyBatis-Plus/RAG参数/初始数据
 │       ├── common/         # 统一响应/异常/JWT/用户上下文
-│       ├── controller/     # auth/subjects/courses/chapters/knowledge-points/docs/assistants/plans/community/exam/projects/analytics/chat/admin…
+│       ├── controller/     # auth/subjects/courses/chapters/knowledge-points/docs/assistants/plans/community/exam/projects/analytics/chat/public/news/admin…
 │       ├── service/        # 各模块业务 + rag/(解析/分块/入库/问答/OCR)
 │       ├── entity/ mapper/ dto/
 ├── frontend/               # Vue3 前端(views/ 下为各模块页面)
-├── sql/init_learning.sql   # 新库 learn_platform 建表(32 张表)
+├── sql/init_learning.sql   # 新库 learn_platform 建表(33 张表)
 ├── docs/                   # 前端原型设计、用例图等设计文档
 ├── PROJECT_CONVENTIONS.md  # 项目约束(工作流/提交规范)
 └── docker-compose.yml      # MySQL + Redis + Chroma
@@ -60,7 +63,8 @@ RAG/
 
 ### 1. 建库(MySQL)
 ```bash
-mysql -u root -p < sql/init_learning.sql   # 建 learn_platform,32 张表
+mysql -u root -p < sql/init_learning.sql          # 新库 learn_platform(33 张表)
+mysql -u root -p < sql/upgrade_guest_public_news.sql   # 老库升级:补 knowledge_news 表
 ```
 > 本机 MySQL 密码若与默认不同,请设置 `DB_PASSWORD`。
 
@@ -115,6 +119,8 @@ npm run dev    # http://localhost:5173,/api 自动代理到 8080
 | `LLM_BASE_URL` / `LLM_MODEL` | api.deepseek.com / deepseek-chat | 生成模型 |
 | `EMBED_BASE_URL` / `EMBED_MODEL` | api.siliconflow.cn / BAAI/bge-small-zh-v1.5 | 嵌入模型 |
 | `OCR_BASE_URL` | (空) | OCR 服务(PaddleOCR),扫描件解析用 |
+| `NEWS_FETCH_CRON` | `0 0 9 * * ?` | 知识资讯定时抓取(默认每天早上 9:00) |
+| `NEWS_RSS_FEEDS` | (见 application.yml) | 资讯源列表,每项 `来源名\|分类\|RSS地址`,逗号分隔 |
 
 ## 六、RAG 核心链路
 1. 文档摄入解析(PDF/Word/PPT/TXT,扫描件走 OCR,保留页码)。2. 递归字符分块。3. 向量化嵌入。4. 写入 Chroma。5. 问题向量检索 Top-K。6. (可选)召回重排。7. 大模型生成带引用回答。后续统一入 `doc_chunk`/`qa_record`。

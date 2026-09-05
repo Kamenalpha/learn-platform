@@ -27,6 +27,7 @@
               <el-menu-item index="/exam"><el-icon><EditPen /></el-icon>出题模拟</el-menu-item>
               <el-menu-item index="/project"><el-icon><Briefcase /></el-icon>项目辅导</el-menu-item>
             </el-sub-menu>
+            <el-menu-item index="/news"><el-icon><Reading /></el-icon>知识资讯</el-menu-item>
             <el-menu-item index="/community"><el-icon><ChatLineRound /></el-icon>社区</el-menu-item>
             <el-sub-menu index="growth">
               <template #title>个人成长</template>
@@ -48,7 +49,7 @@
             <el-avatar :size="30" class="user-avatar">{{ userStore.userInfo?.nickname?.[0] || 'U' }}</el-avatar>
             <span class="user-name">{{ userStore.userInfo?.nickname || userStore.userInfo?.username }}</span>
             <el-tag size="small" :type="userStore.isAdmin ? 'warning' : 'info'" effect="plain" round>
-              {{ userStore.isAdmin ? '管理员' : '学生' }}
+              {{ userStore.isAdmin ? '管理员' : '学习者' }}
             </el-tag>
           </span>
           <template #dropdown>

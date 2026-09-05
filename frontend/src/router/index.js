@@ -4,6 +4,7 @@ import { ElMessage } from 'element-plus'
 const routes = [
   { path: '/', name: 'Home', component: () => import('../views/Home.vue') },
   { path: '/explore', name: 'Explore', component: () => import('../views/Explore.vue') },
+  { path: '/news', name: 'News', component: () => import('../views/News.vue') },
   { path: '/login', name: 'Login', component: () => import('../views/Login.vue') },
   {
     path: '/',
@@ -32,9 +33,12 @@ const router = createRouter({
   routes
 })
 
+// 游客(未登录)也可访问的页面:浏览公开内容即可学习,个性化功能需登录
+const GUEST_PATHS = new Set(['/', '/explore', '/news', '/login'])
+
 router.beforeEach((to) => {
   const token = localStorage.getItem('token')
-  if (to.path !== '/' && to.path !== '/explore' && to.path !== '/login' && !token) {
+  if (!GUEST_PATHS.has(to.path) && !token) {
     return '/login'
   }
   if (to.path === '/login' && token) {

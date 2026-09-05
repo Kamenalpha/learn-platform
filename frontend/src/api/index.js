@@ -7,6 +7,15 @@ export const api = {
   register: (data) => request.post('/auth/register', data),
   me: () => request.get('/auth/me'),
 
+  // 公开内容(游客可访问,无需登录)
+  publicCourses: () => request.get('/public/courses'),
+  publicCourseDocs: (courseId) => request.get(`/public/courses/${courseId}/docs`),
+  publicDocPreview: (resourceId) => request.get(`/public/docs/${resourceId}/preview`),
+
+  // 知识资讯(列表游客可访问;手动抓取仅管理员)
+  newsList: (params) => request.get('/news/list', { params }),
+  newsFetch: () => request.post('/admin/news/fetch'),
+
   // 课程
   listCourses: () => request.get('/courses'),
   addCourse: (data) => request.post('/courses', data),

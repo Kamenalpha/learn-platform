@@ -69,3 +69,10 @@ rag:
 logging:
   level:
     org.springframework.ai: INFO
+
+# 知识资讯:系统每天早上 9:00 自动抓取公开资讯源(RSS/Atom)入库,
+# 强制标注来源(source_name/source_url),仅作学习导航,如若侵权可联系删除。
+news:
+  fetch-cron: ${NEWS_FETCH_CRON:0 0 9 * * ?}
+  # 每项格式:来源名|分类|RSS地址,英文逗号分隔;可用环境变量 NEWS_RSS_FEEDS 整体覆盖
+  rss-feeds: ${NEWS_RSS_FEEDS:知乎每日精选|综合|https://www.zhihu.com/rss,Solidot|科技|https://www.solidot.org/index.rss,少数派|数字生活|https://sspai.com/feed,36氪|商业科技|https://36kr.com/feed,阮一峰的网络日志|科技|https://www.ruanyifeng.com/blog/atom.xml}

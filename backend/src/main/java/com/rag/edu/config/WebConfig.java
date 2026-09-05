@@ -20,7 +20,10 @@ public class WebConfig implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(authInterceptor)
                 .addPathPatterns("/api/**")
-                .excludePathPatterns("/api/auth/login", "/api/auth/register");
+                .excludePathPatterns(
+                        "/api/auth/login", "/api/auth/register",
+                        // 游客(未登录)可访问的公开只读接口:知识资讯 + 公开课程内容
+                        "/api/news/list", "/api/public/**");
     }
 
     @Override
