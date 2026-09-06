@@ -20,6 +20,18 @@ app = FastAPI(title="local-embeddings")
 _session: ort.InferenceSession | None = None
 
 
+@app.middleware("http")
+async def log_requests(request, call_next):
+    body = await request.body()
+    print(
+        f"[req] {request.method} {request.url.path} "
+        f"ct={request.headers.get('content-type')} len={len(body)} "
+        f"prefix={body[:200]!r}",
+        flush=True,
+    )
+    return await call_next(request)
+
+
 def get_session() -> ort.InferenceSession:
     global _session
     if _session is None:
