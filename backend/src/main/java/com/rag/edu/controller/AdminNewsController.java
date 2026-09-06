@@ -24,4 +24,10 @@ public class AdminNewsController {
     public Result<Map<String, Object>> fetch() {
         return Result.ok(Map.of("added", newsService.fetchAndSave()));
     }
+
+    /** 为存量资讯补抓正文(部分站点反爬可能失败,可多次执行) */
+    @PostMapping("/backfill")
+    public Result<Map<String, Object>> backfill() {
+        return Result.ok(Map.of("filled", newsService.backfillContent()));
+    }
 }

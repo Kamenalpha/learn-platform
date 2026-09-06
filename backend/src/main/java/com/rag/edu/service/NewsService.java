@@ -334,6 +334,24 @@ public class NewsService {
         return newsMapper.selectById(newsId);
     }
 
+    /** 为缺失正文的存量资讯补抓正文(管理员手动触发),单次最多 50 条,返回补抓成功条数 */
+    public synchronized int backfillContent() {
+        List<KnowledgeNews> missing = newsMapper.selectList(new LambdaQueryWrapper<KnowledgeNews>()
+                .isNull(KnowledgeNews::getContent)
+                .orderByDesc(KnowledgeNews::getFetchedAt)
+                .last("LIMIT 50"));
+        int filled = 0;
+        for (KnowledgeNews item : missing) {
+            String text = fetchArticleText(item.getSourceUrl());
+            if (!text.isBlank()) {
+                item.setContent(truncate(text, MAX_CONTENT_LEN));
+                newsMapper.updateById(item);
+                filled++;
+            }
+        }
+        return filled;
+    }
+
     /** 兼容 RFC-822(RSS)与 ISO-8601(Atom)两种时间格式,失败返回 null */
     private LocalDateTime parseDate(String raw) {
         if (raw == null || raw.isBlank()) {
