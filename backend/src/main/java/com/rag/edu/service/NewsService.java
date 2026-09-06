@@ -61,8 +61,9 @@ public class NewsService {
 
     /** 原文页正文容器选择器(按优先级),均未命中则退化为 body 文本 */
     private static final String[] ARTICLE_SELECTORS = {
-            "article", "div.article-content", "div.article__content", "div.entry-content",
-            "div.post-content", "div.article", "div#content", "div.content", "main"
+            "article", "div.p_mainnew", "div.article-content", "div.article__content",
+            "div.entry-content", "div.post-content", "div.block_content", "div.article",
+            "div#content", "div.content", "main"
     };
 
     /** 资讯源配置:来源名|分类|RSS地址,逗号分隔(见 application.yml news.rss-feeds) */
