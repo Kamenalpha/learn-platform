@@ -94,6 +94,13 @@
             <version>${pdfbox.version}</version>
         </dependency>
 
+        <!-- 资讯正文抽取:HTML 解析(RSS content:encoded / 原文页正文提取) -->
+        <dependency>
+            <groupId>org.jsoup</groupId>
+            <artifactId>jsoup</artifactId>
+            <version>1.18.1</version>
+        </dependency>
+
         <!-- 认证:JWT + BCrypt密码加密 -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>

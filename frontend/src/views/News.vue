@@ -22,7 +22,7 @@
         <h1>每天 9:00，为你带来各领域的新知识</h1>
         <span>
           系统每日早上 9:00 自动抓取公开资讯源的最新内容，覆盖科技、科学、商业等多个领域，
-          任何人不登录即可阅读；点击条目可跳转原文深入学习。
+          任何人不登录即可阅读；点击条目即可在站内阅读全文（已标明出处）。
           <template v-if="userStore.isAdmin">
             <el-button size="small" type="primary" plain :loading="fetching" class="fetch-btn" @click="manualFetch">
               管理员：立即抓取
@@ -49,11 +49,10 @@
         </div>
 
         <div class="news-list">
-          <article v-for="item in items" :key="item.newsId || item.title" class="news-card">
+          <article v-for="item in items" :key="item.newsId || item.title" class="news-card" @click="openDetail(item)">
             <div class="news-main">
               <h3>
-                <a v-if="isExternal(item)" :href="item.sourceUrl" target="_blank" rel="noopener noreferrer">{{ item.title }}</a>
-                <span v-else>{{ item.title }}</span>
+                {{ item.title }}
                 <el-tag v-if="item.isSample" size="small" type="info" effect="plain" round>示例</el-tag>
               </h3>
               <p v-if="item.summary">{{ item.summary }}</p>
@@ -61,9 +60,10 @@
                 <span class="source-name"><el-icon><Link /></el-icon>来源：{{ item.sourceName }}</span>
                 <el-tag size="small" effect="plain" round>{{ item.category }}</el-tag>
                 <span class="time">{{ formatTime(item.publishedAt || item.fetchedAt) }}</span>
-                <a v-if="isExternal(item)" class="origin-link" :href="item.sourceUrl" target="_blank" rel="noopener noreferrer">
+                <a v-if="isExternal(item)" class="origin-link" :href="item.sourceUrl" target="_blank" rel="noopener noreferrer" @click.stop>
                   查看原文<el-icon><TopRight /></el-icon>
                 </a>
+                <span class="origin-link" v-if="item.newsId">站内阅读<el-icon><Right /></el-icon></span>
               </div>
             </div>
           </article>
@@ -78,8 +78,28 @@
     </main>
 
     <footer class="news-footer">
-      学习平台 · 知识资讯仅作学习导航，内容版权归原作者所有，已标明来源；如若侵权，可联系删除。
+      学习平台 · 知识资讯仅作学习交流，内容版权归原作者所有，已标明来源；如若侵权，可联系删除。
     </footer>
+
+    <!-- 站内阅读弹窗:正文已抓取入库,显著标注出处 -->
+    <el-dialog v-model="detailVisible" width="680px" top="6vh" :title="detail?.title || '资讯详情'">
+      <template v-if="detail">
+        <div class="detail-meta">
+          <span class="source-name"><el-icon><Link /></el-icon>来源：{{ detail.sourceName }}</span>
+          <el-tag size="small" effect="plain" round>{{ detail.category }}</el-tag>
+          <span class="time">{{ formatTime(detail.publishedAt || detail.fetchedAt) }}</span>
+        </div>
+        <div class="detail-content">
+          {{ detail.content || detail.summary || '本条暂无站内正文,请点击下方「查看原文」阅读。' }}
+        </div>
+        <div class="detail-foot">
+          <a v-if="detail.sourceUrl" :href="detail.sourceUrl" target="_blank" rel="noopener noreferrer">
+            查看原文出处<el-icon><TopRight /></el-icon>
+          </a>
+          <span class="copyright-note">内容由系统抓取自公开资讯源并已标注出处,版权归原作者所有;如若侵权,可联系管理员删除。</span>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -87,7 +107,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { InfoFilled, Link, Loading, TopRight } from '@element-plus/icons-vue'
+import { InfoFilled, Link, Loading, Right, TopRight } from '@element-plus/icons-vue'
 import { api } from '../api'
 import { useUserStore } from '../store/user'
 
@@ -156,6 +176,20 @@ async function manualFetch() {
     load(true)
   } finally {
     fetching.value = false
+  }
+}
+
+// 站内阅读:正文已抽取入库(标明出处),不再直接跳出站外
+const detailVisible = ref(false)
+const detail = ref(null)
+async function openDetail(item) {
+  detail.value = { ...item }
+  detailVisible.value = true
+  if (!item.newsId) return // 示例数据无真实详情
+  try {
+    detail.value = await api.newsDetail(item.newsId)
+  } catch (e) {
+    // 保留列表数据兜底展示
   }
 }
 
@@ -253,6 +287,7 @@ main { flex: 1; }
   transition: border-color .2s ease, transform .2s ease;
 }
 .news-card:hover { border-color: var(--accent-line); transform: translateY(-2px); }
+.news-card { cursor: pointer; }
 .news-main h3 { margin: 0; font-size: 16.5px; line-height: 1.55; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .news-main h3 a { color: var(--paper); text-decoration: none; }
 .news-main h3 a:hover { color: var(--accent-strong); }
@@ -264,6 +299,23 @@ main { flex: 1; }
 .origin-link:hover { text-decoration: underline; }
 .loading { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 34px 0; color: var(--ink-3); }
 .more-row { display: flex; justify-content: center; margin-top: 24px; }
+
+/* 站内阅读弹窗 */
+.detail-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; color: var(--ink-3); font-size: 13px; margin-bottom: 14px; }
+.detail-content {
+  white-space: pre-wrap;
+  line-height: 1.85;
+  font-size: 14px;
+  color: var(--paper);
+  max-height: 55vh;
+  overflow-y: auto;
+  padding: 16px;
+  background: var(--surface-2);
+  border-radius: 8px;
+}
+.detail-foot { margin-top: 14px; display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: var(--ink-3); }
+.detail-foot a { color: var(--accent-strong); text-decoration: none; display: inline-flex; align-items: center; gap: 4px; width: fit-content; }
+.detail-foot a:hover { text-decoration: underline; }
 .more-row :deep(.el-button) { color: var(--ink-2); background: var(--surface); border-color: var(--line-strong); }
 
 .news-footer {

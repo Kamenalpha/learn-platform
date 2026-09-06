@@ -35,11 +35,15 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
+import org.jsoup.Jsoup;
+
 /**
  * 知识资讯服务:
  * - 每天早上 9:00(@Scheduled)自动抓取公开资讯源(RSS/Atom),最新知识入库;
  * - 单条按 source_url 唯一去重,入库强制标注来源(source_name/source_url),落实版权要求;
- * - 抓取仅取标题/摘要/链接用于导航,不转载正文,如若侵权可联系删除。
+ * - 正文入库(2026-09-06 起):优先取 RSS 自带全文(content:encoded / Atom content),
+ *   否则抓取原文页抽取正文,转为纯文本存 content,站内阅读;失败退化为"标题+摘要+原文链接"模式。
+ *   所有条目保留原文链接与版权声明,如若侵权可联系删除。
  */
 @Service
 public class NewsService {
@@ -48,6 +52,18 @@ public class NewsService {
 
     /** 每个源单次最多入库条数,避免单一源刷屏 */
     private static final int MAX_ITEMS_PER_FEED = 30;
+
+    /** 每个源单次最多抓取正文的条数(限制外网请求量,超出部分保持纯链接模式) */
+    private static final int MAX_CONTENT_FETCH_PER_FEED = 10;
+
+    /** 正文最大字符数,防止异常长文占库 */
+    private static final int MAX_CONTENT_LEN = 20000;
+
+    /** 原文页正文容器选择器(按优先级),均未命中则退化为 body 文本 */
+    private static final String[] ARTICLE_SELECTORS = {
+            "article", "div.article-content", "div.article__content", "div.entry-content",
+            "div.post-content", "div.article", "div#content", "div.content", "main"
+    };
 
     /** 资讯源配置:来源名|分类|RSS地址,逗号分隔(见 application.yml news.rss-feeds) */
     @Value("${news.rss-feeds}")
@@ -88,9 +104,10 @@ public class NewsService {
         return added;
     }
 
-    /** 分页列表(游客可访问);附带去重后的分类列表供前端筛选 */
+    /** 分页列表(游客可访问);附带去重后的分类列表供前端筛选;不回传大字段正文 */
     public Map<String, Object> page(String category, int page, int size) {
         LambdaQueryWrapper<KnowledgeNews> wrapper = new LambdaQueryWrapper<KnowledgeNews>()
+                .select(KnowledgeNews.class, f -> !"content".equals(f.getProperty()))
                 .eq(category != null && !category.isBlank() && !"全部".equals(category),
                         KnowledgeNews::getCategory, category)
                 .orderByDesc(KnowledgeNews::getFetchedAt)
@@ -120,15 +137,24 @@ public class NewsService {
             throw new IllegalStateException("HTTP " + resp.statusCode());
         }
         int added = 0;
+        int contentFetched = 0;
         for (KnowledgeNews item : parseFeed(feed, resp.body())) {
             Long exists = newsMapper.selectCount(new LambdaQueryWrapper<KnowledgeNews>()
                     .eq(KnowledgeNews::getSourceUrl, item.getSourceUrl()));
             if (exists != null && exists > 0) {
                 continue;
             }
+            // 正文来源 1:RSS 自带全文(content:encoded / Atom content)已在 parseFeed 中抽取;
+            // 正文来源 2:每源限量抓取原文页正文,超出限额或抓取失败保持纯链接模式
+            if ((item.getContent() == null || item.getContent().isBlank())
+                    && contentFetched < MAX_CONTENT_FETCH_PER_FEED) {
+                item.setContent(fetchArticleText(item.getSourceUrl()));
+                contentFetched++;
+            }
             item.setTitle(truncate(item.getTitle(), 500));
             item.setSummary(truncate(item.getSummary(), 1000));
             item.setSourceUrl(truncate(item.getSourceUrl(), 760));
+            item.setContent(truncate(item.getContent(), MAX_CONTENT_LEN));
             newsMapper.insert(item);
             added++;
         }
@@ -163,6 +189,9 @@ public class NewsService {
             KnowledgeNews news = new KnowledgeNews();
             news.setTitle(title.trim());
             news.setSummary(summary);
+            // 正文来源 1:RSS 自带全文(content:encoded 为 RSS 惯例,Atom 用 <content>)
+            news.setContent(htmlToText(firstNonBlank(
+                    textOf(el, "content:encoded"), atomContentOf(el))));
             news.setSourceName(feed[0]);
             news.setSourceUrl(link.trim());
             news.setCategory(feed[1]);
@@ -232,6 +261,79 @@ public class NewsService {
                 .trim();
     }
 
+    /** Atom <content>:type="src" 的是外链占位无正文,跳过 */
+    private String atomContentOf(Element parent) {
+        NodeList nodes = parent.getElementsByTagName("content");
+        for (int i = 0; i < nodes.getLength(); i++) {
+            Element el = (Element) nodes.item(i);
+            if (el.getAttribute("src").isBlank()) {
+                String text = el.getTextContent().trim();
+                if (!text.isBlank()) {
+                    return text;
+                }
+            }
+        }
+        return "";
+    }
+
+    /** 抓取原文页并抽取正文纯文本;任何失败返回空串(退化为纯链接模式) */
+    private String fetchArticleText(String url) {
+        if (url == null || !url.startsWith("http")) {
+            return "";
+        }
+        try {
+            HttpRequest request = HttpRequest.newBuilder(URI.create(url))
+                    .timeout(Duration.ofSeconds(10))
+                    .header("User-Agent", "Mozilla/5.0 (compatible; LearnPlatform-RAG/1.0; graduation-project)")
+                    .header("Accept", "text/html,application/xhtml+xml,*/*")
+                    .GET()
+                    .build();
+            HttpResponse<String> resp = http.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            if (resp.statusCode() != 200) {
+                return "";
+            }
+            org.jsoup.nodes.Document doc = Jsoup.parse(resp.body(), url);
+            doc.select("script,style,noscript,nav,header,footer,aside,iframe,form,svg,div.comment,section.comment").remove();
+            org.jsoup.nodes.Element best = null;
+            for (String selector : ARTICLE_SELECTORS) {
+                org.jsoup.nodes.Element candidate = doc.select(selector).stream()
+                        .filter(e -> e.text().length() > 200)
+                        .findFirst().orElse(null);
+                if (candidate != null) {
+                    best = candidate;
+                    break;
+                }
+            }
+            if (best == null) {
+                best = doc.body();
+            }
+            return best == null ? "" : htmlToText(best.html());
+        } catch (Exception e) {
+            log.debug("[资讯] 原文正文抓取失败,退化为链接模式: {} - {}", url, e.getMessage());
+            return "";
+        }
+    }
+
+    /** HTML 转纯文本:块级元素换行,保留段落结构;输出不含任何 HTML 标签(防 XSS,前端按纯文本渲染) */
+    private String htmlToText(String html) {
+        if (html == null || html.isBlank()) {
+            return "";
+        }
+        org.jsoup.nodes.Document doc = Jsoup.parse(html);
+        doc.select("br").append("~NL~");
+        doc.select("p,div,li,tr,h1,h2,h3,h4,h5,h6,blockquote,pre,section,article").prepend("~NL~");
+        String text = doc.text()
+                .replace("~NL~", "\n")
+                .replaceAll("\\n{3,}", "\n\n")
+                .trim();
+        return text;
+    }
+
+    /** 分页列表不回传大字段正文,详情接口单独取 */
+    public KnowledgeNews detail(Long newsId) {
+        return newsMapper.selectById(newsId);
+    }
+
     /** 兼容 RFC-822(RSS)与 ISO-8601(Atom)两种时间格式,失败返回 null */
     private LocalDateTime parseDate(String raw) {
         if (raw == null || raw.isBlank()) {
@@ -254,6 +356,10 @@ public class NewsService {
         if (a != null && !a.isBlank()) return a;
         if (b != null && !b.isBlank()) return b;
         return c == null ? "" : c;
+    }
+
+    private String firstNonBlank(String a, String b) {
+        return firstNonBlank(a, b, "");
     }
 
     private String truncate(String s, int max) {

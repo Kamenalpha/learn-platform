@@ -20,8 +20,11 @@ public class KnowledgeNews {
 
     private String title;
 
-    /** 摘要(截断存储,仅作索引导航) */
+    /** 摘要(截断存储,仅作索引导览) */
     private String summary;
+
+    /** 资讯正文(抽取后的纯文本,标明出处;抓取失败为 null,退化为原文链接模式) */
+    private String content;
 
     /** 来源名称(版权标注,如 Solidot / 少数派) */
     private String sourceName;

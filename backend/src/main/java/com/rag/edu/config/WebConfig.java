@@ -23,7 +23,7 @@ public class WebConfig implements WebMvcConfigurer {
                 .excludePathPatterns(
                         "/api/auth/login", "/api/auth/register",
                         // 游客(未登录)可访问的公开只读接口:知识资讯 + 公开课程内容
-                        "/api/news/list", "/api/public/**");
+                        "/api/news/list", "/api/news/detail/**", "/api/public/**");
     }
 
     @Override

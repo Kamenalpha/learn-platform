@@ -14,6 +14,7 @@ export const api = {
 
   // 知识资讯(列表游客可访问;手动抓取仅管理员)
   newsList: (params) => request.get('/news/list', { params }),
+  newsDetail: (id) => request.get(`/news/detail/${id}`),
   newsFetch: () => request.post('/admin/news/fetch'),
 
   // 课程
