@@ -19,6 +19,9 @@ import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -27,13 +30,14 @@ import java.util.Map;
 
 /**
  * RAG 问答链路:问题向量化检索 -> Top-K召回 -> 组装上下文 -> 大模型生成 -> 引用溯源
+ * 支持同步与流式(SSE)两种生成方式。
  */
 @Slf4j
 @Service
 public class ChatService {
 
     private static final String SYSTEM_PROMPT = """
-            你是“数媒课程知识库助手”,服务于数字媒体技术专业的学生,回答必须严格依据给出的知识上下文。
+            你是“多学科智能学习平台的知识库助手”,面向所有学科的学习者,回答必须严格依据给出的知识上下文。
             规则:
             1. 只使用【知识上下文】中的内容回答问题,不要编造;
             2. 回答中在对应结论处标注引用编号,如 [1]、[2],编号与上下文中来源一一对应;
@@ -67,6 +71,71 @@ public class ChatService {
     public AskResp ask(Long userId, String sessionId, String question,
                        List<Long> courseIds, String assistantPrompt) {
         long start = System.currentTimeMillis();
+        PreparedCtx ctx = prepare(sessionId, question, courseIds, assistantPrompt);
+
+        String answer;
+        try {
+            answer = chatClient.prompt()
+                    .system(ctx.sys())
+                    .user(ctx.userMessage())
+                    .call()
+                    .content();
+        } catch (Exception e) {
+            log.error("大模型调用失败", e);
+            throw new BizException("大模型调用失败,请检查 API Key 与网络: " + e.getMessage());
+        }
+
+        // 保存对话上下文(Redis)与问答记录(MySQL)
+        saveHistory(sessionId, question, answer);
+        long elapsed = System.currentTimeMillis() - start;
+        QaRecord record = persist(userId, sessionId, question, answer, ctx.sources(), elapsed);
+
+        return new AskResp(record.getRecordId(), answer, ctx.sources(), elapsed);
+    }
+
+    /**
+     * 流式问答(SSE):事件序列 refs(引用来源) -> delta*(逐段文本) -> done(落库完成)。
+     * 回答全文在流结束时落 Redis 历史与 qa_record,失败不发 done、不落库。
+     */
+    public Flux<String> askStream(Long userId, String sessionId, String question,
+                                  List<Long> courseIds, String assistantPrompt) {
+        long start = System.currentTimeMillis();
+        StringBuilder answer = new StringBuilder();
+        return Flux.defer(() -> {
+            PreparedCtx ctx = prepare(sessionId, question, courseIds, assistantPrompt);
+            Flux<String> refs = Flux.just(event("refs", toJson(ctx.sources())));
+            Flux<String> deltas = chatClient.prompt()
+                    .system(ctx.sys())
+                    .user(ctx.userMessage())
+                    .stream()
+                    .content()
+                    .map(chunk -> {
+                        if (chunk != null) {
+                            answer.append(chunk);
+                            return event("delta", chunk);
+                        }
+                        return null;
+                    })
+                    .filter(java.util.Objects::nonNull);
+            Mono<String> done = Mono.fromCallable(() -> {
+                String full = answer.toString();
+                saveHistory(sessionId, question, full);
+                long elapsed = System.currentTimeMillis() - start;
+                QaRecord record = persist(userId, sessionId, question, full, ctx.sources(), elapsed);
+                return event("done", objectMapper.writeValueAsString(
+                        Map.of("recordId", record.getRecordId() == null ? 0L : record.getRecordId(),
+                                "elapsedMs", elapsed)));
+            }).subscribeOn(Schedulers.boundedElastic());
+            return Flux.concat(refs, deltas, done);
+        }).onErrorResume(e -> {
+            log.error("流式问答失败", e);
+            return Flux.just(event("error", e.getMessage() == null ? "生成失败" : e.getMessage()));
+        });
+    }
+
+    /** 检索 + 上下文/提示词装配(同步与流式共用) */
+    private PreparedCtx prepare(String sessionId, String question,
+                                List<Long> courseIds, String assistantPrompt) {
         KbConfig cfg = kbConfigService.get();
 
         // 1. 相似度检索:问题 -> 向量,召回 Top-K 知识块。
@@ -118,35 +187,36 @@ public class ChatService {
                 + "【知识上下文】\n" + (context.isEmpty() ? "(无)" : context)
                 + "【问题】" + question + "\n请依据以上规则回答。";
 
-        // 4. 大模型生成(若指定助手则用其自定义系统提示词,否则用默认)
+        // 4. 系统提示词(若指定助手则用其自定义提示词,否则用默认)
         String sys = (assistantPrompt == null || assistantPrompt.isBlank())
                 ? SYSTEM_PROMPT + (cfg.promptSuffix() == null ? "" : "\n" + cfg.promptSuffix())
                 : assistantPrompt;
-        String answer;
-        try {
-            answer = chatClient.prompt()
-                    .system(sys)
-                    .user(userMessage)
-                    .call()
-                    .content();
-        } catch (Exception e) {
-            log.error("大模型调用失败", e);
-            throw new BizException("大模型调用失败,请检查 API Key 与网络: " + e.getMessage());
-        }
+        return new PreparedCtx(sources, userMessage, sys);
+    }
 
-        // 5. 保存对话上下文(Redis)与问答记录(MySQL)
-        saveHistory(sessionId, question, answer);
-        long elapsed = System.currentTimeMillis() - start;
+    private record PreparedCtx(List<Source> sources, String userMessage, String sys) {
+    }
+
+    private QaRecord persist(Long userId, String sessionId, String question,
+                             String answer, List<Source> sources, long elapsedMs) {
         QaRecord record = new QaRecord();
         record.setUserId(userId);
         record.setSessionId(sessionId);
         record.setQuestion(question);
         record.setAnswer(answer);
         record.setReference(toJson(sources));
-        record.setElapsedMs(elapsed);
+        record.setElapsedMs(elapsedMs);
         qaRecordMapper.insert(record);
+        return record;
+    }
 
-        return new AskResp(record.getRecordId(), answer, sources, elapsed);
+    /** SSE 事件帧:{"type":"delta","data":"..."} */
+    private String event(String type, String data) {
+        try {
+            return objectMapper.writeValueAsString(Map.of("type", type, "data", data == null ? "" : data));
+        } catch (Exception e) {
+            return "{\"type\":\"error\",\"data\":\"event serialize failed\"}";
+        }
     }
 
     private String loadHistory(String sessionId) {

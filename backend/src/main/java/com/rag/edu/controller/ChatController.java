@@ -12,7 +12,9 @@ import com.rag.edu.service.AssistantService;
 import com.rag.edu.service.rag.ChatService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
 
 import java.util.List;
 
@@ -39,6 +41,19 @@ public class ChatController {
             prompt = a.systemPrompt();
         }
         return Result.ok(chatService.ask(UserContext.userId(), req.sessionId(), req.question(), courseIds, prompt));
+    }
+
+    /** 流式提问(SSE):先推引用来源,再逐段推送回答,结束时落库并回传记录ID */
+    @PostMapping(value = "/ask/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<String> askStream(@Valid @RequestBody AskReq req) {
+        List<Long> courseIds = null;
+        String prompt = null;
+        if (req.assistantId() != null) {
+            AssistantVO a = assistantService.getDetail(req.assistantId());
+            courseIds = a.courseIds();
+            prompt = a.systemPrompt();
+        }
+        return chatService.askStream(UserContext.userId(), req.sessionId(), req.question(), courseIds, prompt);
     }
 
     /** 当前用户的会话列表 */

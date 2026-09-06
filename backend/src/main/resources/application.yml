@@ -5,6 +5,10 @@ spring:
   application:
     name: learn-platform
 
+  mvc:
+    async:
+      request-timeout: 300000   # SSE 流式问答的异步请求超时(默认 Tomcat 30s 太短)
+
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://${DB_HOST:localhost}:3306/${DB_NAME:learn_platform}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true

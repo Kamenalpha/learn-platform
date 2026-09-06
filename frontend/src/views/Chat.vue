@@ -19,7 +19,7 @@
     <div class="chat-main">
       <div ref="msgListRef" class="msg-list">
         <div v-if="messages.length === 0" class="empty-tip">
-          <h3>你好,我是数媒课程知识库助手 👋</h3>
+          <h3>你好,我是多学科智能学习助手 👋</h3>
           <p>可以问我课程知识点,例如:</p>
           <el-space wrap>
             <el-tag v-for="q in sampleQuestions" :key="q" class="sample" @click="quickAsk(q)">{{ q }}</el-tag>
@@ -27,7 +27,10 @@
         </div>
         <div v-for="(m, i) in messages" :key="i" class="msg-row" :class="m.role">
           <div class="bubble" :class="m.role">
-            <div class="pre-wrap">{{ m.content }}</div>
+            <div class="pre-wrap">
+              <template v-if="m.pending && !m.content">正在检索知识库…</template>
+              <template v-else>{{ m.content }}<span v-if="m.pending" class="cursor-flash">▍</span></template>
+            </div>
             <template v-if="m.role === 'assistant' && m.references?.length">
               <el-divider style="margin: 8px 0" />
               <div style="font-size: 12px; color: var(--mist); margin-bottom: 4px">
@@ -44,9 +47,6 @@
               </div>
             </template>
           </div>
-        </div>
-        <div v-if="asking" class="msg-row assistant">
-          <div class="bubble assistant">正在检索知识库并生成回答…</div>
         </div>
       </div>
 
@@ -80,7 +80,7 @@
 </template>
 
 <script setup>
-import { nextTick, onMounted, ref } from 'vue'
+import { nextTick, onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { api } from '../api'
 
@@ -94,9 +94,9 @@ const sourceVisible = ref(false)
 const currentSource = ref(null)
 
 const sampleQuestions = [
-  '什么是图像直方图均衡化?',
-  '简述渲染管线的 stages',
-  '帧间预测编码的原理是什么?'
+  '什么是进程?进程和程序有什么区别?',
+  '导数的定义是什么?变化率怎么理解?',
+  '英语段落写作的主题句怎么写?'
 ]
 
 const newSession = () => {
@@ -133,21 +133,53 @@ const send = async () => {
   input.value = ''
   messages.value.push({ role: 'user', content: question })
   asking.value = true
+  // 流式消息:pending 期间气泡显示占位/闪烁光标,完成后转为普通消息
+  const msg = reactive({ role: 'assistant', content: '', references: null, recordId: null, elapsedMs: null, pending: true })
+  messages.value.push(msg)
   scrollBottom()
+  let streamed = false // 是否已收到至少一段回答(决定是否回退同步接口)
   try {
-    const resp = await api.ask({ sessionId: sessionId.value, question })
-    messages.value.push({
-      role: 'assistant',
-      content: resp.answer,
-      references: resp.references,
-      recordId: resp.recordId,
-      elapsedMs: resp.elapsedMs
-    })
-    loadSessions()
-  } finally {
-    asking.value = false
-    scrollBottom()
+    await api.askStream(
+      { sessionId: sessionId.value, question },
+      (type, data) => {
+        if (type === 'refs') {
+          msg.references = typeof data === 'string' ? parseRef(data) : data
+        } else if (type === 'delta') {
+          streamed = true
+          msg.content += data || ''
+          scrollBottom()
+        } else if (type === 'done') {
+          try {
+            const d = typeof data === 'string' ? JSON.parse(data) : data
+            msg.recordId = d.recordId
+            msg.elapsedMs = d.elapsedMs
+          } catch (e) {
+            // done 数据异常不阻塞收尾
+          }
+        } else if (type === 'error') {
+          if (!msg.content) msg.content = '回答生成失败: ' + (data || '未知错误')
+        }
+      }
+    )
+  } catch (e) {
+    // fetch 层异常且一无所获 → 回退同步接口(流式失败时后端未落库,不会重复记录)
   }
+  if (!streamed && !msg.content) {
+    try {
+      const resp = await api.ask({ sessionId: sessionId.value, question })
+      msg.content = resp.answer
+      msg.references = resp.references
+      msg.recordId = resp.recordId
+      msg.elapsedMs = resp.elapsedMs
+    } catch (e2) {
+      // request 拦截器已统一 toast
+      if (!msg.content) msg.content = '回答生成失败,请稍后重试'
+    }
+  }
+  msg.pending = false
+  asking.value = false
+  loadSessions()
+  scrollBottom()
 }
 
 const showSource = (r) => {
@@ -250,6 +282,17 @@ onMounted(() => {
 
 .sample {
   cursor: pointer;
+}
+
+.cursor-flash {
+  animation: blink 1s step-start infinite;
+  color: var(--accent, #4a7dff);
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
 }
 
 .msg-row {

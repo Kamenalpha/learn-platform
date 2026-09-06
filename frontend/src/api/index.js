@@ -102,6 +102,56 @@ export const api = {
 
   // 问答
   ask: (data) => request.post('/chat/ask', data),
+  // 流式问答(SSE):onEvent(type, data) 回调 refs/delta/done/error 事件;
+  // 用 fetch 而非 EventSource 以便携带 Authorization 头。返回 Promise,流结束(含异常)即 resolve
+  askStream: (data, onEvent) => {
+    const fire = (type, payload) => {
+      try {
+        onEvent && onEvent(type, payload)
+      } catch (e) {
+        // 回调异常不中断流
+      }
+    }
+    const handleLine = (line) => {
+      const t = line.trim()
+      if (!t.startsWith('data:')) return
+      const payload = t.slice(5).trim()
+      if (!payload) return
+      try {
+        const evt = JSON.parse(payload)
+        fire(evt.type, evt.data)
+      } catch (e) {
+        // 无法解析的帧忽略
+      }
+    }
+    return (async () => {
+      try {
+        const resp = await fetch('/api/chat/ask/stream', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: 'Bearer ' + (localStorage.getItem('token') || '')
+          },
+          body: JSON.stringify(data)
+        })
+        if (!resp.ok || !resp.body) throw new Error('HTTP ' + resp.status)
+        const reader = resp.body.getReader()
+        const decoder = new TextDecoder('utf-8')
+        let buf = ''
+        for (;;) {
+          const { done, value } = await reader.read()
+          if (done) break
+          buf += decoder.decode(value, { stream: true })
+          const lines = buf.split('\n')
+          buf = lines.pop() // 末尾半行留到下一轮
+          lines.forEach(handleLine)
+        }
+        if (buf) handleLine(buf)
+      } catch (e) {
+        fire('error', e.message || '网络异常')
+      }
+    })()
+  },
   sessions: () => request.get('/chat/sessions'),
   records: () => request.get('/chat/records'),
   history: (sessionId) => request.get('/chat/history', { params: { sessionId } }),
