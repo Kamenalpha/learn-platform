@@ -13,6 +13,9 @@ dist/
 uploads/
 data/
 
+# 本地样例教材(开放版权,仅本地测试用,不入库)
+sample-materials/
+
 # IDE
 .idea/
 *.iml
