@@ -17,12 +17,14 @@ public interface ExamSourceMapper {
             SELECT ch.content, ch.resource_id, ch.page_num
             FROM doc_chunk ch JOIN resource r ON r.resource_id = ch.resource_id
             WHERE r.course_id = #{courseId}
+              AND (r.user_id = #{userId} OR r.visibility = 1 AND r.audit_status = 1)
             <if test="resourceId != null"> AND ch.resource_id = #{resourceId} </if>
             ORDER BY ch.resource_id, ch.chunk_index
             LIMIT #{limit}
             </script>
             """)
-    List<Map<String, Object>> courseChunks(@Param("courseId") Long courseId,
+    List<Map<String, Object>> courseChunks(@Param("userId") Long userId,
+                                           @Param("courseId") Long courseId,
                                            @Param("resourceId") Long resourceId,
                                            @Param("limit") int limit);
 

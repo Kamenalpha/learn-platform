@@ -11,6 +11,7 @@ import com.rag.edu.entity.QaRecord;
 import com.rag.edu.mapper.DocChunkMapper;
 import com.rag.edu.mapper.QaRecordMapper;
 import com.rag.edu.service.KbConfigService;
+import com.rag.edu.service.CourseAccessService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
@@ -55,10 +56,12 @@ public class ChatService {
     private final QaRecordMapper qaRecordMapper;
     private final DocChunkMapper chunkMapper;
     private final ObjectMapper objectMapper;
+    private final CourseAccessService courseAccessService;
 
     public ChatService(ChatModel chatModel, VectorStore vectorStore, KbConfigService kbConfigService,
                        StringRedisTemplate redis, QaRecordMapper qaRecordMapper,
-                       DocChunkMapper chunkMapper, ObjectMapper objectMapper) {
+                       DocChunkMapper chunkMapper, ObjectMapper objectMapper,
+                       CourseAccessService courseAccessService) {
         this.chatClient = ChatClient.builder(chatModel).build();
         this.vectorStore = vectorStore;
         this.kbConfigService = kbConfigService;
@@ -66,12 +69,13 @@ public class ChatService {
         this.qaRecordMapper = qaRecordMapper;
         this.chunkMapper = chunkMapper;
         this.objectMapper = objectMapper;
+        this.courseAccessService = courseAccessService;
     }
 
     public AskResp ask(Long userId, String sessionId, String question,
                        List<Long> courseIds, String assistantPrompt) {
         long start = System.currentTimeMillis();
-        PreparedCtx ctx = prepare(sessionId, question, courseIds, assistantPrompt);
+        PreparedCtx ctx = prepare(userId, sessionId, question, courseIds, assistantPrompt);
 
         String answer;
         try {
@@ -102,7 +106,7 @@ public class ChatService {
         long start = System.currentTimeMillis();
         StringBuilder answer = new StringBuilder();
         return Flux.defer(() -> {
-            PreparedCtx ctx = prepare(sessionId, question, courseIds, assistantPrompt);
+            PreparedCtx ctx = prepare(userId, sessionId, question, courseIds, assistantPrompt);
             Flux<String> refs = Flux.just(event("refs", toJson(ctx.sources())));
             Flux<String> deltas = chatClient.prompt()
                     .system(ctx.sys())
@@ -134,7 +138,7 @@ public class ChatService {
     }
 
     /** 检索 + 上下文/提示词装配(同步与流式共用) */
-    private PreparedCtx prepare(String sessionId, String question,
+    private PreparedCtx prepare(Long userId, String sessionId, String question,
                                 List<Long> courseIds, String assistantPrompt) {
         KbConfig cfg = kbConfigService.get();
 
@@ -142,27 +146,26 @@ public class ChatService {
         //    若指定助手且绑定课程,则限定在绑定课程内检索(知识隔离)。
         Integer topK = cfg.topK() == null ? 5 : cfg.topK();
         Double threshold = cfg.similarityThreshold() == null ? 0.5 : cfg.similarityThreshold();
-        List<Document> hits;
-        SearchRequest scoped = null;
+        List<Document> hits = List.of();
         if (courseIds != null && !courseIds.isEmpty()) {
-            List<String> ids = courseIds.stream().map(String::valueOf).toList();
-            String expr = "courseId in ['" + String.join("', '", ids) + "']";
-            scoped = SearchRequest.builder().query(question).topK(topK)
+            String expr = "courseId in ['" + courseIds.stream()
+                    .map(String::valueOf).collect(java.util.stream.Collectors.joining("', '")) + "']";
+            SearchRequest scoped = SearchRequest.builder().query(question).topK(topK)
                     .similarityThreshold(threshold).filterExpression(expr).build();
-        }
-        try {
-            hits = scoped != null
-                    ? vectorStore.similaritySearch(scoped)
-                    : vectorStore.similaritySearch(SearchRequest.builder().query(question)
-                            .topK(topK).similarityThreshold(threshold).build());
-        } catch (Exception e) {
-            log.warn("限定课程检索失败,回退全局检索: {}", e.getMessage());
-            hits = vectorStore.similaritySearch(SearchRequest.builder().query(question)
-                    .topK(topK).similarityThreshold(threshold).build());
+            try {
+                hits = vectorStore.similaritySearch(scoped);
+            } catch (Exception e) {
+                log.error("限定课程检索失败,已阻止全库回退", e);
+                throw new BizException("知识库检索失败,请稍后重试");
+            }
         }
         if (hits == null) {
             hits = List.of();
         }
+        hits = hits.stream().filter(hit -> {
+            Long docId = parseLong(hit.getMetadata().get("docId"));
+            return docId != null && courseAccessService.canReadResource(docId, userId);
+        }).toList();
 
         // 2. 组装引用来源与知识上下文
         List<Source> sources = new ArrayList<>();

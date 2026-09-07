@@ -3,10 +3,8 @@ package com.rag.edu.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.rag.edu.common.BizException;
 import com.rag.edu.entity.Chapter;
-import com.rag.edu.entity.Course;
 import com.rag.edu.entity.KnowledgePoint;
 import com.rag.edu.mapper.ChapterMapper;
-import com.rag.edu.mapper.CourseMapper;
 import com.rag.edu.mapper.KnowledgePointMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -22,9 +20,14 @@ public class KnowledgePointService {
 
     private final KnowledgePointMapper knowledgePointMapper;
     private final ChapterMapper chapterMapper;
-    private final CourseMapper courseMapper;
+    private final CourseAccessService courseAccessService;
 
-    public List<KnowledgePoint> listByChapter(Long chapterId) {
+    public List<KnowledgePoint> listByChapter(Long chapterId, Long userId) {
+        Chapter chapter = chapterMapper.selectById(chapterId);
+        if (chapter == null) {
+            throw new BizException(404, "章节不存在");
+        }
+        courseAccessService.requireReadableCourse(chapter.getCourseId(), userId);
         return knowledgePointMapper.selectList(new LambdaQueryWrapper<KnowledgePoint>()
                 .eq(KnowledgePoint::getChapterId, chapterId)
                 .orderByAsc(KnowledgePoint::getOrderNum));
@@ -60,9 +63,6 @@ public class KnowledgePointService {
         if (chapter == null) {
             throw new BizException("章节不存在");
         }
-        Course course = courseMapper.selectById(chapter.getCourseId());
-        if (course == null || !course.getOwnerId().equals(userId)) {
-            throw new BizException(403, "无权操作该知识点");
-        }
+        courseAccessService.requireManagedCourse(chapter.getCourseId(), userId);
     }
 }

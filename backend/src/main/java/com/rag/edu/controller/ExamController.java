@@ -28,7 +28,7 @@ public class ExamController {
 
     @GetMapping("/paper/{paperId}")
     public Result<Map<String, Object>> paperDetail(@PathVariable Long paperId) {
-        return Result.ok(examPracticeService.paperDetail(paperId));
+        return Result.ok(examPracticeService.paperDetail(paperId, UserContext.userId()));
     }
 
     @PostMapping("/submit")

@@ -36,19 +36,19 @@ public class DocumentController {
 
     @GetMapping
     public Result<List<DocResource>> list(@RequestParam(required = false) Long courseId) {
-        return Result.ok(documentService.list(courseId));
+        return Result.ok(documentService.list(courseId, UserContext.userId()));
     }
 
     /** 文档详情 + 分块列表(文档预览/分块检查) */
     @GetMapping("/{docId}")
     public Result<Map<String, Object>> detail(@PathVariable Long docId) {
-        return Result.ok(documentService.detail(docId));
+        return Result.ok(documentService.detail(docId, UserContext.userId()));
     }
 
     /** 源文件预览(PDF可在浏览器内直接打开) */
     @GetMapping("/{docId}/file")
     public ResponseEntity<Resource> file(@PathVariable Long docId) {
-        Map<String, Object> loaded = documentService.loadFile(docId);
+        Map<String, Object> loaded = documentService.loadFile(docId, UserContext.userId());
         String filename = URLEncoder.encode((String) loaded.get("filename"), StandardCharsets.UTF_8)
                 .replace("+", "%20");
         return ResponseEntity.ok()

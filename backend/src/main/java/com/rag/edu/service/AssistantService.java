@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * AI 助手配置管理:支持为不同课程定制助手,并以绑定课程实现知识隔离.
@@ -23,6 +24,7 @@ public class AssistantService {
 
     private final AssistantMapper assistantMapper;
     private final AssistantCourseMapper assistantCourseMapper;
+    private final CourseAccessService courseAccessService;
 
     public List<AssistantVO> listMine(Long userId) {
         List<Assistant> list = assistantMapper.selectList(new LambdaQueryWrapper<Assistant>()
@@ -31,16 +33,19 @@ public class AssistantService {
         return list.stream().map(this::toVO).toList();
     }
 
-    public AssistantVO getDetail(Long assistantId) {
+    public AssistantVO getDetail(Long assistantId, Long userId) {
         Assistant a = assistantMapper.selectById(assistantId);
-        if (a == null) {
+        if (a == null || !Objects.equals(a.getUserId(), userId)) {
             throw new BizException(404, "助手不存在");
         }
-        return toVO(a);
+        AssistantVO detail = toVO(a);
+        courseAccessService.requireManagedCourses(detail.courseIds(), userId);
+        return detail;
     }
 
     @Transactional
     public AssistantVO save(AssistantSaveReq req, Long userId) {
+        courseAccessService.requireManagedCourses(req.courseIds(), userId);
         Assistant a = new Assistant();
         a.setAssistantId(req.assistantId());
         a.setUserId(userId);
@@ -58,7 +63,7 @@ public class AssistantService {
             assistantMapper.insert(a);
         } else {
             Assistant db = assistantMapper.selectById(a.getAssistantId());
-            if (db == null || !db.getUserId().equals(userId)) {
+            if (db == null || !Objects.equals(db.getUserId(), userId)) {
                 throw new BizException(403, "无权修改该助手");
             }
             assistantMapper.updateById(a);
@@ -79,7 +84,7 @@ public class AssistantService {
 
     public void delete(Long assistantId, Long userId) {
         Assistant db = assistantMapper.selectById(assistantId);
-        if (db == null || !db.getUserId().equals(userId)) {
+        if (db == null || !Objects.equals(db.getUserId(), userId)) {
             throw new BizException(403, "无权删除该助手");
         }
         assistantCourseMapper.delete(new LambdaQueryWrapper<AssistantCourse>()

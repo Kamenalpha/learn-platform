@@ -3,10 +3,8 @@ package com.rag.edu.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.rag.edu.common.BizException;
 import com.rag.edu.entity.Chapter;
-import com.rag.edu.entity.Course;
 import com.rag.edu.entity.KnowledgePoint;
 import com.rag.edu.mapper.ChapterMapper;
-import com.rag.edu.mapper.CourseMapper;
 import com.rag.edu.mapper.KnowledgePointMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -21,17 +19,18 @@ import java.util.List;
 public class ChapterService {
 
     private final ChapterMapper chapterMapper;
-    private final CourseMapper courseMapper;
+    private final CourseAccessService courseAccessService;
     private final KnowledgePointMapper knowledgePointMapper;
 
-    public List<Chapter> listByCourse(Long courseId) {
+    public List<Chapter> listByCourse(Long courseId, Long userId) {
+        courseAccessService.requireReadableCourse(courseId, userId);
         return chapterMapper.selectList(new LambdaQueryWrapper<Chapter>()
                 .eq(Chapter::getCourseId, courseId)
                 .orderByAsc(Chapter::getOrderNum));
     }
 
     public void save(Chapter chapter, Long userId) {
-        verifyCourseOwner(chapter.getCourseId(), userId);
+        courseAccessService.requireManagedCourse(chapter.getCourseId(), userId);
         if (chapter.getOrderNum() == null) {
             chapter.setOrderNum(0);
         }
@@ -51,7 +50,7 @@ public class ChapterService {
         if (db == null) {
             return;
         }
-        verifyCourseOwner(db.getCourseId(), userId);
+        courseAccessService.requireManagedCourse(db.getCourseId(), userId);
         Long kps = knowledgePointMapper.selectCount(new LambdaQueryWrapper<KnowledgePoint>()
                 .eq(KnowledgePoint::getChapterId, chapterId));
         Long children = chapterMapper.selectCount(new LambdaQueryWrapper<Chapter>()
@@ -62,10 +61,4 @@ public class ChapterService {
         chapterMapper.deleteById(chapterId);
     }
 
-    private void verifyCourseOwner(Long courseId, Long userId) {
-        Course course = courseMapper.selectById(courseId);
-        if (course == null || !course.getOwnerId().equals(userId)) {
-            throw new BizException(403, "无权操作该课程下的章节");
-        }
-    }
 }

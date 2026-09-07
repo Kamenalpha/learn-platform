@@ -18,6 +18,7 @@ import java.util.Map;
 public class CourseService {
 
     private final CourseMapper courseMapper;
+    private final CourseAccessService courseAccessService;
 
     public List<Map<String, Object>> listVisible(Long userId) {
         return courseMapper.listVisible(userId);
@@ -26,10 +27,8 @@ public class CourseService {
     public void save(Course course, Long userId) {
         // 归属当前用户
         course.setOwnerId(userId);
-        Course db = course.getCourseId() == null ? null : courseMapper.selectById(course.getCourseId());
-        if (db != null && !db.getOwnerId().equals(userId)) {
-            throw new BizException(403, "无权修改该课程");
-        }
+        Course db = course.getCourseId() == null ? null
+                : courseAccessService.requireManagedCourse(course.getCourseId(), userId);
         // 可见性缺省时:新建视为私有,编辑保持原值
         if (course.getVisibility() == null) {
             course.setVisibility(db == null ? 0 : db.getVisibility());
@@ -56,10 +55,7 @@ public class CourseService {
     }
 
     public void delete(Long courseId, Long userId) {
-        Course db = courseMapper.selectById(courseId);
-        if (db == null || !db.getOwnerId().equals(userId)) {
-            throw new BizException(403, "无权删除该课程");
-        }
+        courseAccessService.requireManagedCourse(courseId, userId);
         Long docs = courseMapper.countResources(courseId);
         if (docs > 0) {
             throw new BizException("该课程下还有 " + docs + " 个资料,请先删除资料");

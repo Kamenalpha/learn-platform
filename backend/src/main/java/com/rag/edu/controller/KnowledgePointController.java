@@ -21,7 +21,7 @@ public class KnowledgePointController {
 
     @GetMapping("/chapter/{chapterId}")
     public Result<List<KnowledgePoint>> listByChapter(@PathVariable Long chapterId) {
-        return Result.ok(knowledgePointService.listByChapter(chapterId));
+        return Result.ok(knowledgePointService.listByChapter(chapterId, UserContext.userId()));
     }
 
     @PostMapping

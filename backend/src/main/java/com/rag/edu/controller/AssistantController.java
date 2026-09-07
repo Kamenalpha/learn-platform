@@ -27,7 +27,7 @@ public class AssistantController {
 
     @GetMapping("/{assistantId}")
     public Result<AssistantVO> detail(@PathVariable Long assistantId) {
-        return Result.ok(assistantService.getDetail(assistantId));
+        return Result.ok(assistantService.getDetail(assistantId, UserContext.userId()));
     }
 
     @PostMapping

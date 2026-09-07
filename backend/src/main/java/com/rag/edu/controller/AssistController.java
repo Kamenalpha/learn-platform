@@ -1,6 +1,7 @@
 package com.rag.edu.controller;
 
 import com.rag.edu.common.Result;
+import com.rag.edu.common.UserContext;
 import com.rag.edu.dto.KbDtos.ExamReq;
 import com.rag.edu.dto.KbDtos.GraphData;
 import com.rag.edu.service.rag.ExamService;
@@ -24,12 +25,12 @@ public class AssistController {
     @GetMapping("/graph")
     public Result<GraphData> graph(@RequestParam Long courseId,
                                    @RequestParam(defaultValue = "false") boolean refresh) {
-        return Result.ok(graphService.build(courseId, refresh));
+        return Result.ok(graphService.build(courseId, UserContext.userId(), refresh));
     }
 
     /** 考点自动生成:知识点梳理 + 练习题 */
     @PostMapping("/exam")
     public Result<String> exam(@Valid @RequestBody ExamReq req) {
-        return Result.ok(examService.generate(req.courseId(), req.chapter()));
+        return Result.ok(examService.generate(req.courseId(), UserContext.userId(), req.chapter()));
     }
 }

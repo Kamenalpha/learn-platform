@@ -14,7 +14,8 @@ public interface CourseMapper extends BaseMapper<Course> {
     @Select("""
             SELECT c.course_id, c.course_name, c.subject_id, c.owner_id, c.description, c.visibility,
                    c.audit_status, c.create_time,
-                   (SELECT COUNT(*) FROM resource r WHERE r.course_id = c.course_id) AS doc_count,
+                   (SELECT COUNT(*) FROM resource r WHERE r.course_id = c.course_id
+                     AND (c.owner_id = #{userId} OR r.visibility = 1 AND r.audit_status = 1)) AS doc_count,
                    (SELECT s.subject_name FROM subject s WHERE s.subject_id = c.subject_id) AS subject_name
             FROM course c
             WHERE c.owner_id = #{userId}

@@ -2,7 +2,7 @@ package com.rag.edu.service.rag;
 
 import com.rag.edu.common.BizException;
 import com.rag.edu.entity.Course;
-import com.rag.edu.mapper.CourseMapper;
+import com.rag.edu.service.CourseAccessService;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.document.Document;
@@ -26,27 +26,40 @@ public class ExamService {
             若资料不足以覆盖该章节,请如实说明已覆盖的范围。
             """;
 
-    private final CourseMapper courseMapper;
+    private final CourseAccessService courseAccessService;
     private final VectorStore vectorStore;
     private final ChatClient chatClient;
 
-    public ExamService(CourseMapper courseMapper, VectorStore vectorStore, ChatModel chatModel) {
-        this.courseMapper = courseMapper;
+    public ExamService(CourseAccessService courseAccessService, VectorStore vectorStore, ChatModel chatModel) {
+        this.courseAccessService = courseAccessService;
         this.vectorStore = vectorStore;
         this.chatClient = ChatClient.builder(chatModel).build();
     }
 
-    public String generate(Long courseId, String chapter) {
-        Course course = courseMapper.selectById(courseId);
-        if (course == null) {
-            throw new BizException("课程不存在");
-        }
+    public String generate(Long courseId, Long userId, String chapter) {
+        Course course = courseAccessService.requireManagedCourse(courseId, userId);
         String query = (chapter == null || chapter.isBlank())
                 ? course.getCourseName() + " 核心知识点 考点"
                 : course.getCourseName() + " " + chapter;
 
-        List<Document> hits = vectorStore.similaritySearch(SearchRequest.builder()
-                .query(query).topK(10).similarityThreshold(0.3).build());
+        String filter = "courseId == '" + courseId + "'";
+        List<Document> hits;
+        try {
+            hits = vectorStore.similaritySearch(SearchRequest.builder()
+                    .query(query).topK(10).similarityThreshold(0.3).filterExpression(filter).build());
+        } catch (Exception e) {
+            throw new BizException("课程知识库检索失败,请稍后重试");
+        }
+        hits = hits == null ? List.of() : hits.stream()
+                .filter(hit -> {
+                    Object docId = hit.getMetadata().get("docId");
+                    try {
+                        return docId != null && courseAccessService.canReadResource(
+                                Long.valueOf(docId.toString()), userId);
+                    } catch (NumberFormatException e) {
+                        return false;
+                    }
+                }).toList();
         if (hits == null || hits.isEmpty()) {
             throw new BizException("该课程知识库暂无内容,请先上传并解析课件文档");
         }

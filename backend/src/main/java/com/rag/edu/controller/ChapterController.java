@@ -21,7 +21,7 @@ public class ChapterController {
 
     @GetMapping("/course/{courseId}")
     public Result<List<Chapter>> listByCourse(@PathVariable Long courseId) {
-        return Result.ok(chapterService.listByCourse(courseId));
+        return Result.ok(chapterService.listByCourse(courseId, UserContext.userId()));
     }
 
     @PostMapping

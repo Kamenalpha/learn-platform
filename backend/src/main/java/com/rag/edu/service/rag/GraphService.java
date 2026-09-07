@@ -9,7 +9,7 @@ import com.rag.edu.dto.KbDtos.GraphEdge;
 import com.rag.edu.dto.KbDtos.GraphNode;
 import com.rag.edu.entity.Course;
 import com.rag.edu.entity.DocChunk;
-import com.rag.edu.mapper.CourseMapper;
+import com.rag.edu.service.CourseAccessService;
 import com.rag.edu.mapper.DocChunkMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * 知识图谱:用大模型从课程分块中抽取知识点关键词,
@@ -44,27 +45,24 @@ public class GraphService {
     private static final int MAX_EDGES = 80;           // 图谱边上限
     private static final Duration CACHE_TTL = Duration.ofHours(2);
 
-    private final CourseMapper courseMapper;
+    private final CourseAccessService courseAccessService;
     private final DocChunkMapper chunkMapper;
     private final ChatClient chatClient;
     private final StringRedisTemplate redis;
     private final ObjectMapper objectMapper;
 
-    public GraphService(CourseMapper courseMapper, DocChunkMapper chunkMapper,
+    public GraphService(CourseAccessService courseAccessService, DocChunkMapper chunkMapper,
                         ChatModel chatModel, StringRedisTemplate redis, ObjectMapper objectMapper) {
-        this.courseMapper = courseMapper;
+        this.courseAccessService = courseAccessService;
         this.chunkMapper = chunkMapper;
         this.chatClient = ChatClient.builder(chatModel).build();
         this.redis = redis;
         this.objectMapper = objectMapper;
     }
 
-    public GraphData build(Long courseId, boolean refresh) {
-        Course course = courseMapper.selectById(courseId);
-        if (course == null) {
-            throw new BizException("课程不存在");
-        }
-        String cacheKey = "rag:graph:" + courseId;
+    public GraphData build(Long courseId, Long userId, boolean refresh) {
+        Course course = courseAccessService.requireManagedCourse(courseId, userId);
+        String cacheKey = "rag:graph:" + courseId + ":" + userId;
         if (!refresh) {
             String cached = redis.opsForValue().get(cacheKey);
             if (cached != null) {
@@ -72,10 +70,13 @@ public class GraphService {
             }
         }
 
+        String resourceScope = "SELECT resource_id FROM resource WHERE course_id = " + courseId;
+        if (Objects.equals(course.getOwnerId(), userId)) {
+            resourceScope += " AND (user_id = " + userId + " OR visibility = 1 AND audit_status = 1)";
+        }
         List<DocChunk> chunks = chunkMapper.selectList(
                 new LambdaQueryWrapper<DocChunk>()
-                        .inSql(DocChunk::getResourceId,
-                               "SELECT resource_id FROM resource WHERE course_id = " + courseId)
+                        .inSql(DocChunk::getResourceId, resourceScope)
                         .last("LIMIT " + MAX_CHUNKS));
         if (chunks.isEmpty()) {
             throw new BizException("该课程暂无已解析的知识块,请先上传课件");

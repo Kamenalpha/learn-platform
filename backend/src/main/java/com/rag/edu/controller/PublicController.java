@@ -13,6 +13,7 @@ import com.rag.edu.mapper.DocChunkMapper;
 import com.rag.edu.mapper.DocResourceMapper;
 import com.rag.edu.mapper.SubjectMapper;
 import com.rag.edu.mapper.SysUserMapper;
+import com.rag.edu.service.CourseAccessService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -44,6 +45,7 @@ public class PublicController {
     private final DocChunkMapper docChunkMapper;
     private final SubjectMapper subjectMapper;
     private final SysUserMapper userMapper;
+    private final CourseAccessService courseAccessService;
 
     /** 公开课程列表(含学科名/公开人/公开教材数) */
     @GetMapping("/courses")
@@ -108,9 +110,10 @@ public class PublicController {
     /** 公开教材试读:拼接前若干分块正文(不含原文件下载) */
     @GetMapping("/docs/{resourceId}/preview")
     public Result<Map<String, Object>> docPreview(@PathVariable Long resourceId) {
-        DocResource doc = docResourceMapper.selectById(resourceId);
-        if (doc == null || doc.getVisibility() == null || doc.getVisibility() != 1
-                || doc.getAuditStatus() == null || doc.getAuditStatus() != 1) {
+        DocResource doc;
+        try {
+            doc = courseAccessService.requireReadableResource(resourceId, null);
+        } catch (BizException e) {
             throw new BizException(404, "教材不存在或未公开");
         }
         List<DocChunk> chunks = docChunkMapper.selectList(new LambdaQueryWrapper<DocChunk>()

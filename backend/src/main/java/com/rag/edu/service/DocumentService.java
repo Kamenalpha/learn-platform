@@ -2,8 +2,6 @@ package com.rag.edu.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.rag.edu.common.BizException;
-import com.rag.edu.common.LoginUser;
-import com.rag.edu.common.UserContext;
 import com.rag.edu.config.RagProperties;
 import com.rag.edu.entity.DocChunk;
 import com.rag.edu.entity.DocResource;
@@ -40,9 +38,11 @@ public class DocumentService {
     private final DocChunkMapper chunkMapper;
     private final IngestService ingestService;
     private final RagProperties props;
+    private final CourseAccessService courseAccessService;
 
     /** 上传资料并自动触发解析入库,返回资料信息 */
     public DocResource upload(MultipartFile file, Long courseId, Long uploaderId) {
+        courseAccessService.requireManagedCourse(courseId, uploaderId);
         if (file == null || file.isEmpty()) {
             throw new BizException("请选择要上传的文件");
         }
@@ -81,25 +81,25 @@ public class DocumentService {
         return resourceMapper.selectById(res.getResourceId());
     }
 
-    public List<DocResource> list(Long courseId) {
+    public List<DocResource> list(Long courseId, Long userId) {
+        if (courseId != null) {
+            courseAccessService.requireReadableCourse(courseId, userId);
+        }
         LambdaQueryWrapper<DocResource> wrapper = new LambdaQueryWrapper<>();
         if (courseId != null) {
             wrapper.eq(DocResource::getCourseId, courseId);
         }
-        // 默认仅看自己上传 + 公开审核通过
-        Long uid = UserContext.userId();
-        wrapper.and(w -> w.eq(DocResource::getUserId, uid)
+        wrapper.and(w -> w.eq(DocResource::getUserId, userId)
                 .or().eq(DocResource::getVisibility, 1)
                 .eq(DocResource::getAuditStatus, 1));
         wrapper.orderByDesc(DocResource::getCreateTime);
-        return resourceMapper.selectList(wrapper);
+        return resourceMapper.selectList(wrapper).stream()
+                .filter(resource -> courseAccessService.canReadResource(resource.getResourceId(), userId))
+                .toList();
     }
 
-    public Map<String, Object> detail(Long resourceId) {
-        DocResource res = resourceMapper.selectById(resourceId);
-        if (res == null) {
-            throw new BizException("资料不存在");
-        }
+    public Map<String, Object> detail(Long resourceId, Long userId) {
+        DocResource res = courseAccessService.requireReadableResource(resourceId, userId);
         List<DocChunk> chunks = chunkMapper.selectList(new LambdaQueryWrapper<DocChunk>()
                 .eq(DocChunk::getResourceId, resourceId).orderByAsc(DocChunk::getChunkIndex));
         return Map.of("resource", res, "chunks", chunks);
@@ -107,11 +107,7 @@ public class DocumentService {
 
     /** 删除资料:清理向量 + 分块 + 文件 + 记录(归属者或管理员) */
     public void delete(Long resourceId, Long userId) {
-        DocResource res = resourceMapper.selectById(resourceId);
-        if (res == null) {
-            throw new BizException("资料不存在");
-        }
-        checkOwnerOrAdmin(res, userId);
+        DocResource res = courseAccessService.requireManagedResource(resourceId, userId);
         ingestService.removeVectors(resourceId);
         chunkMapper.delete(new LambdaQueryWrapper<DocChunk>().eq(DocChunk::getResourceId, resourceId));
         try {
@@ -124,21 +120,13 @@ public class DocumentService {
 
     /** 重新解析(调整分块参数后可重建向量;归属者或管理员) */
     public int reparse(Long resourceId, Long userId) {
-        DocResource res = resourceMapper.selectById(resourceId);
-        if (res == null) {
-            throw new BizException("资料不存在");
-        }
-        checkOwnerOrAdmin(res, userId);
+        courseAccessService.requireManagedResource(resourceId, userId);
         return ingestService.ingest(resourceId);
     }
 
     /** 设置资料可见性(归属者或管理员):公开(1)会(重新)进入审核,通过后游客可见 */
     public void setVisibility(Long resourceId, Integer visibility, Long userId) {
-        DocResource res = resourceMapper.selectById(resourceId);
-        if (res == null) {
-            throw new BizException("资料不存在");
-        }
-        checkOwnerOrAdmin(res, userId);
+        DocResource res = courseAccessService.requireManagedResource(resourceId, userId);
         if (visibility == null || visibility < 0 || visibility > 2) {
             throw new BizException("非法的可见性取值");
         }
@@ -149,11 +137,8 @@ public class DocumentService {
     }
 
     /** 文件预览/下载 */
-    public Map<String, Object> loadFile(Long resourceId) {
-        DocResource res = resourceMapper.selectById(resourceId);
-        if (res == null) {
-            throw new BizException("资料不存在");
-        }
+    public Map<String, Object> loadFile(Long resourceId, Long userId) {
+        DocResource res = courseAccessService.requireReadableResource(resourceId, userId);
         Path path = Path.of(props.getUploadDir(), res.getFileUrl());
         if (!Files.exists(path)) {
             throw new BizException("源文件已丢失");
@@ -192,12 +177,4 @@ public class DocumentService {
         return dot < 0 ? name : name.substring(0, dot);
     }
 
-    /** 归属者或管理员可执行删除/重新解析 */
-    private void checkOwnerOrAdmin(DocResource res, Long userId) {
-        LoginUser u = UserContext.get();
-        boolean admin = u != null && u.getRole() != null && u.getRole() == 1;
-        if (!admin && (res.getUserId() == null || !res.getUserId().equals(userId))) {
-            throw new BizException(403, "无权操作该资料");
-        }
-    }
 }

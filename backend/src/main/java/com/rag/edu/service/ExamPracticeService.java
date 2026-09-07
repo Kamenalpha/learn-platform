@@ -38,12 +38,13 @@ public class ExamPracticeService {
     private final ExamAnswerMapper examAnswerMapper;
     private final MistakeMapper mistakeMapper;
     private final StudyLogService studyLogService;
+    private final CourseAccessService courseAccessService;
 
     public ExamPracticeService(ChatModel chatModel, ObjectMapper objectMapper, ExamSourceMapper sourceMapper,
                                QuestionMapper questionMapper, PaperMapper paperMapper,
                                PaperQuestionMapper paperQuestionMapper, ExamRecordMapper examRecordMapper,
                                ExamAnswerMapper examAnswerMapper, MistakeMapper mistakeMapper,
-                               StudyLogService studyLogService) {
+                               StudyLogService studyLogService, CourseAccessService courseAccessService) {
         this.chatClient = ChatClient.builder(chatModel).build();
         this.objectMapper = objectMapper;
         this.sourceMapper = sourceMapper;
@@ -54,10 +55,21 @@ public class ExamPracticeService {
         this.examAnswerMapper = examAnswerMapper;
         this.mistakeMapper = mistakeMapper;
         this.studyLogService = studyLogService;
+        this.courseAccessService = courseAccessService;
     }
 
     @Transactional
     public Map<String, Object> generate(Long userId, GenerateReq req) {
+        int sourceType = req.sourceType() == null ? 0 : req.sourceType();
+        if (sourceType != 1) {
+            courseAccessService.requireManagedCourse(req.courseId(), userId);
+            if (req.resourceId() != null) {
+                DocResource resource = courseAccessService.requireManagedResource(req.resourceId(), userId);
+                if (!Objects.equals(resource.getCourseId(), req.courseId())) {
+                    throw new BizException("资料不属于所选课程");
+                }
+            }
+        }
         String material = gatherMaterial(userId, req);
         if (material.isBlank()) {
             throw new BizException("素材不足,无法出题");
@@ -129,9 +141,9 @@ public class ExamPracticeService {
                 "questions", questions.stream().map(this::toVO).toList());
     }
 
-    public Map<String, Object> paperDetail(Long paperId) {
+    public Map<String, Object> paperDetail(Long paperId, Long userId) {
         Paper paper = paperMapper.selectById(paperId);
-        if (paper == null) {
+        if (paper == null || !Objects.equals(paper.getUserId(), userId)) {
             throw new BizException(404, "试卷不存在");
         }
         List<PaperQuestion> pqs = paperQuestionMapper.selectList(new LambdaQueryWrapper<PaperQuestion>()
@@ -150,7 +162,7 @@ public class ExamPracticeService {
     @Transactional
     public Map<String, Object> grade(Long userId, GradeReq req) {
         Paper paper = paperMapper.selectById(req.paperId());
-        if (paper == null) {
+        if (paper == null || !Objects.equals(paper.getUserId(), userId)) {
             throw new BizException(404, "试卷不存在");
         }
         List<PaperQuestion> pqs = paperQuestionMapper.selectList(new LambdaQueryWrapper<PaperQuestion>()
@@ -172,12 +184,15 @@ public class ExamPracticeService {
         List<Map<String, Object>> itemResults = new ArrayList<>();
         double total = 0, got = 0;
         for (GradeItem gi : req.answers()) {
+            PaperQuestion pq = scoreMap.get(gi.questionId());
+            if (pq == null) {
+                continue;
+            }
             Question q = questionMapper.selectById(gi.questionId());
             if (q == null) {
                 continue;
             }
-            PaperQuestion pq = scoreMap.get(q.getQuestionId());
-            int score = (pq == null || pq.getScore() == null) ? 10 : pq.getScore();
+            int score = pq.getScore() == null ? 10 : pq.getScore();
             total += score;
             ExamAnswer ea = new ExamAnswer();
             ea.setExamId(exam.getExamId());
@@ -292,7 +307,8 @@ public class ExamPracticeService {
             List<String> kps = sourceMapper.userKeypoints(userId, 30);
             kps.forEach(k -> sb.append(k).append('\n'));
         } else {
-            List<Map<String, Object>> chunks = sourceMapper.courseChunks(req.courseId(), req.resourceId(), 100);
+            List<Map<String, Object>> chunks = sourceMapper.courseChunks(
+                    userId, req.courseId(), req.resourceId(), 100);
             for (Map<String, Object> c : chunks) {
                 Object content = c.get("content");
                 if (content != null) {

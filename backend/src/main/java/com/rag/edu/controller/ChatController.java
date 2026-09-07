@@ -9,6 +9,7 @@ import com.rag.edu.dto.ChatDtos.AskResp;
 import com.rag.edu.entity.QaRecord;
 import com.rag.edu.mapper.QaRecordMapper;
 import com.rag.edu.service.AssistantService;
+import com.rag.edu.service.CourseAccessService;
 import com.rag.edu.service.rag.ChatService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -29,14 +30,15 @@ public class ChatController {
     private final ChatService chatService;
     private final QaRecordMapper qaRecordMapper;
     private final AssistantService assistantService;
+    private final CourseAccessService courseAccessService;
 
     /** 提问(RAG 检索 + 大模型生成;可选指定助手,限定其绑定课程) */
     @PostMapping("/ask")
     public Result<AskResp> ask(@Valid @RequestBody AskReq req) {
-        List<Long> courseIds = null;
+        List<Long> courseIds = courseAccessService.listManagedCourseIds(UserContext.userId());
         String prompt = null;
         if (req.assistantId() != null) {
-            AssistantVO a = assistantService.getDetail(req.assistantId());
+            AssistantVO a = assistantService.getDetail(req.assistantId(), UserContext.userId());
             courseIds = a.courseIds();
             prompt = a.systemPrompt();
         }
@@ -46,10 +48,10 @@ public class ChatController {
     /** 流式提问(SSE):先推引用来源,再逐段推送回答,结束时落库并回传记录ID */
     @PostMapping(value = "/ask/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<String> askStream(@Valid @RequestBody AskReq req) {
-        List<Long> courseIds = null;
+        List<Long> courseIds = courseAccessService.listManagedCourseIds(UserContext.userId());
         String prompt = null;
         if (req.assistantId() != null) {
-            AssistantVO a = assistantService.getDetail(req.assistantId());
+            AssistantVO a = assistantService.getDetail(req.assistantId(), UserContext.userId());
             courseIds = a.courseIds();
             prompt = a.systemPrompt();
         }
