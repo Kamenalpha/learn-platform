@@ -90,6 +90,7 @@ export const api = {
   // 出题模拟
   examGenerate: (data) => request.post('/exam/generate', data, { timeout: 300000 }),
   examPaper: (id) => request.get(`/exam/paper/${id}`),
+  examStart: (id) => request.post(`/exam/paper/${id}/start`),
   examSubmit: (data) => request.post('/exam/submit', data, { timeout: 300000 }),
   examList: () => request.get('/exam/exams'),
   mistakes: () => request.get('/exam/mistakes'),

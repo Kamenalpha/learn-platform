@@ -16,6 +16,7 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -104,8 +105,7 @@ public class ExamPracticeService {
             q.setResourceId(req.resourceId());
             q.setQtype(item.path("qtype").asInt(0));
             q.setStem(item.path("stem").asText(""));
-            q.setOptions(item.path("options").isMissingNode() || item.path("options").isNull()
-                    ? null : item.path("options").asText());
+            q.setOptions(serializeOptions(item.path("options")));
             q.setAnswer(item.path("answer").asText(""));
             q.setAnalysis(item.path("analysis").asText(""));
             q.setDifficulty(item.path("difficulty").asInt(difficulty));
@@ -158,49 +158,93 @@ public class ExamPracticeService {
         return Map.of("paper", paper, "questions", questions.stream().map(this::toVO).toList());
     }
 
+    /** 开始一次正式考试，答案只保留在服务端。 */
+    @Transactional
+    public Map<String, Object> start(Long userId, Long paperId) {
+        Paper paper = requireOwnedPaper(paperId, userId);
+        LocalDateTime startedAt = LocalDateTime.now();
+        ExamRecord exam = new ExamRecord();
+        exam.setUserId(userId);
+        exam.setPaperId(paperId);
+        exam.setStartTime(startedAt);
+        exam.setScore(0.0);
+        exam.setStatus(0);
+        examRecordMapper.insert(exam);
+
+        Integer durationMin = paper.getDurationMin() == null ? 0 : paper.getDurationMin();
+        return map("examId", exam.getExamId(), "paperId", paperId, "title", paper.getTitle(),
+                "startTime", startedAt, "deadline", durationMin > 0 ? startedAt.plusMinutes(durationMin) : null,
+                "durationMin", durationMin, "questions", loadPaperQuestions(paperId).stream()
+                        .map(PaperQuestion::getQuestionId).map(questionMapper::selectById)
+                        .filter(Objects::nonNull).map(this::toVO).toList());
+    }
+
     /** 交卷并判分(客观题自动 + 主观题AI评分),错题入错题本 */
     @Transactional
     public Map<String, Object> grade(Long userId, GradeReq req) {
-        Paper paper = paperMapper.selectById(req.paperId());
-        if (paper == null || !Objects.equals(paper.getUserId(), userId)) {
-            throw new BizException(404, "试卷不存在");
+        if (req == null || req.examId() == null) {
+            throw new BizException("考试记录ID不能为空");
         }
-        List<PaperQuestion> pqs = paperQuestionMapper.selectList(new LambdaQueryWrapper<PaperQuestion>()
-                .eq(PaperQuestion::getPaperId, req.paperId()));
+        ExamRecord exam = examRecordMapper.selectById(req.examId());
+        if (exam == null || !Objects.equals(exam.getUserId(), userId)) {
+            throw new BizException(404, "考试记录不存在");
+        }
+        if (!Objects.equals(exam.getStatus(), 0)) {
+            throw new BizException(exam.getStatus() != null && exam.getStatus() == 2
+                    ? "考试已截止" : "考试已交卷,请勿重复提交");
+        }
+        Paper paper = requireOwnedPaper(exam.getPaperId(), userId);
+        List<PaperQuestion> pqs = loadPaperQuestions(paper.getPaperId());
         Map<Long, PaperQuestion> scoreMap = new HashMap<>();
         for (PaperQuestion pq : pqs) {
             scoreMap.put(pq.getQuestionId(), pq);
         }
 
-        ExamRecord exam = new ExamRecord();
-        exam.setUserId(userId);
-        exam.setPaperId(paper.getPaperId());
-        exam.setStartTime(LocalDateTime.now());
-        exam.setEndTime(LocalDateTime.now());
-        exam.setStatus(1);
-        exam.setScore(0.0);
-        examRecordMapper.insert(exam);
+        Map<Long, String> submitted = new HashMap<>();
+        for (GradeItem item : req.answers() == null ? List.<GradeItem>of() : req.answers()) {
+            if (item == null || item.questionId() == null) {
+                throw new BizException("作答题目ID不能为空");
+            }
+            if (!scoreMap.containsKey(item.questionId())) {
+                throw new BizException("提交内容包含不属于该试卷的题目");
+            }
+            if (submitted.putIfAbsent(item.questionId(), item.userAnswer()) != null) {
+                throw new BizException("同一道题不能重复提交");
+            }
+        }
+
+        LocalDateTime endedAt = LocalDateTime.now();
+        int durationMin = paper.getDurationMin() == null ? 0 : paper.getDurationMin();
+        if (exam.getStartTime() == null) {
+            throw new BizException("考试尚未开始");
+        }
+        LocalDateTime deadline = durationMin > 0 ? exam.getStartTime().plusMinutes(durationMin) : null;
+        if (deadline != null && endedAt.isAfter(deadline)) {
+            claimExam(exam.getExamId(), userId, 2, deadline);
+            return map("examId", exam.getExamId(), "status", "expired", "message", "考试已截止",
+                    "startTime", exam.getStartTime(), "endTime", deadline);
+        }
+        if (claimExam(exam.getExamId(), userId, 1, endedAt) == 0) {
+            throw new BizException("考试已交卷,请勿重复提交");
+        }
 
         List<Map<String, Object>> itemResults = new ArrayList<>();
         double total = 0, got = 0;
-        for (GradeItem gi : req.answers()) {
-            PaperQuestion pq = scoreMap.get(gi.questionId());
-            if (pq == null) {
-                continue;
-            }
-            Question q = questionMapper.selectById(gi.questionId());
+        for (PaperQuestion pq : pqs) {
+            Question q = questionMapper.selectById(pq.getQuestionId());
             if (q == null) {
                 continue;
             }
             int score = pq.getScore() == null ? 10 : pq.getScore();
             total += score;
+            String userAnswer = submitted.getOrDefault(q.getQuestionId(), "");
             ExamAnswer ea = new ExamAnswer();
             ea.setExamId(exam.getExamId());
             ea.setQuestionId(q.getQuestionId());
-            ea.setUserAnswer(gi.userAnswer());
+            ea.setUserAnswer(userAnswer);
 
             if (q.getQtype() != null && q.getQtype() <= 2) {
-                boolean correct = normalize(q.getAnswer()).equals(normalize(gi.userAnswer()));
+                boolean correct = normalize(q.getAnswer()).equals(normalize(userAnswer));
                 ea.setIsCorrect(correct ? 1 : 0);
                 if (correct) {
                     got += score;
@@ -209,7 +253,7 @@ public class ExamPracticeService {
                 }
                 itemResults.add(map("questionId", q.getQuestionId(), "correct", correct, "score", correct ? score : 0));
             } else {
-                Map<String, Object> grade = aiGrade(q, gi.userAnswer());
+                Map<String, Object> grade = aiGrade(q, userAnswer);
                 Object s = grade.get("score");
                 double sub = s == null ? 0 : Double.parseDouble(s.toString());
                 ea.setAiScore(sub);
@@ -222,17 +266,36 @@ public class ExamPracticeService {
             }
             examAnswerMapper.insert(ea);
         }
-        exam.setScore(Math.round(got * 10) / 10.0);
-        examRecordMapper.updateById(exam);
+        double finalScore = Math.round(got * 10) / 10.0;
+        examRecordMapper.updateScore(exam.getExamId(), finalScore);
 
-        // 埋点:做题行为约30分钟,供学习画像统计
+        // 埋点:使用服务端记录的真实考试时长,供学习画像统计。
         try {
-            studyLogService.logStudy(userId, 1, null, 1800);
+            long actualSeconds = Math.max(0, Duration.between(exam.getStartTime(), endedAt).toSeconds());
+            studyLogService.logStudy(userId, 1, null, (int) Math.min(Integer.MAX_VALUE, actualSeconds));
         } catch (Exception e) {
             log.warn("埋点记录失败: {}", e.getMessage());
         }
 
-        return map("examId", exam.getExamId(), "score", exam.getScore(), "total", total, "items", itemResults);
+        return map("examId", exam.getExamId(), "status", "submitted", "score", finalScore,
+                "total", total, "startTime", exam.getStartTime(), "endTime", endedAt, "items", itemResults);
+    }
+
+    private int claimExam(Long examId, Long userId, int status, LocalDateTime endTime) {
+        return examRecordMapper.claim(examId, userId, status, endTime);
+    }
+
+    private Paper requireOwnedPaper(Long paperId, Long userId) {
+        Paper paper = paperMapper.selectById(paperId);
+        if (paper == null || !Objects.equals(paper.getUserId(), userId)) {
+            throw new BizException(404, "试卷不存在");
+        }
+        return paper;
+    }
+
+    private List<PaperQuestion> loadPaperQuestions(Long paperId) {
+        return paperQuestionMapper.selectList(new LambdaQueryWrapper<PaperQuestion>()
+                .eq(PaperQuestion::getPaperId, paperId).orderByAsc(PaperQuestion::getOrderNum));
     }
 
     private Map<String, Object> aiGrade(Question q, String userAnswer) {
@@ -274,8 +337,17 @@ public class ExamPracticeService {
                 .eq(ExamRecord::getUserId, userId).orderByDesc(ExamRecord::getCreateTime));
         return list.stream().map(e -> {
             Paper p = paperMapper.selectById(e.getPaperId());
+            int durationMin = p == null || p.getDurationMin() == null ? 0 : p.getDurationMin();
+            if (Objects.equals(e.getStatus(), 0) && durationMin > 0 && e.getStartTime() != null) {
+                LocalDateTime deadline = e.getStartTime().plusMinutes(durationMin);
+                if (LocalDateTime.now().isAfter(deadline) && claimExam(e.getExamId(), userId, 2, deadline) == 1) {
+                    e.setStatus(2);
+                    e.setEndTime(deadline);
+                }
+            }
             return map("examId", e.getExamId(), "title", p == null ? "" : p.getTitle(),
-                    "score", e.getScore(), "time", String.valueOf(e.getCreateTime()));
+                    "score", e.getScore(), "status", e.getStatus(), "startTime", e.getStartTime(),
+                    "endTime", e.getEndTime(), "durationMin", durationMin);
         }).toList();
     }
 
@@ -345,8 +417,37 @@ public class ExamPracticeService {
     }
 
     private QuestionVO toVO(Question q) {
-        return new QuestionVO(q.getQuestionId(), q.getQtype(), q.getStem(), q.getOptions(),
-                q.getAnswer(), q.getAnalysis(), q.getDifficulty(), q.getSourceType());
+        return new QuestionVO(q.getQuestionId(), q.getQtype(), q.getStem(), parseOptions(q.getOptions()),
+                q.getDifficulty(), q.getSourceType());
+    }
+
+    String serializeOptions(JsonNode node) {
+        if (node == null || node.isMissingNode() || node.isNull()) {
+            return null;
+        }
+        try {
+            JsonNode options = node.isTextual() ? objectMapper.readTree(node.asText()) : node;
+            return options.isArray() ? objectMapper.writeValueAsString(options) : null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private List<String> parseOptions(String json) {
+        if (json == null || json.isBlank()) {
+            return List.of();
+        }
+        try {
+            JsonNode node = objectMapper.readTree(json);
+            if (!node.isArray()) {
+                return List.of();
+            }
+            List<String> options = new ArrayList<>();
+            node.forEach(option -> options.add(option.asText()));
+            return options;
+        } catch (Exception e) {
+            return List.of();
+        }
     }
 
     private String joinTypes(List<Integer> types) {

@@ -42,32 +42,33 @@
       </el-form>
 
       <el-alert v-if="generated" type="success" :closable="false" show-icon
-                title="已生成题目,可预览或开始模拟考试" style="margin-bottom:12px" />
+                title="试卷已生成。正式考试开始后计时,答案将在交卷后判定。" style="margin-bottom:12px" />
 
       <!-- 预览 -->
-      <div v-if="questions && !answering" class="q-list">
+      <div v-if="questions.length && !answering" class="q-list">
         <div v-for="(q, i) in questions" :key="q.questionId" class="q-item">
           <div class="q-stem"><b>{{ i + 1 }}.</b> [{{ typeName(q.qtype) }}] {{ q.stem }}</div>
-          <div v-if="q.options" class="q-opts">
-            <div v-for="(op, j) in parseOptions(q.options)" :key="j">{{ op }}</div>
+          <div v-if="q.options?.length" class="q-opts">
+            <div v-for="(op, j) in q.options" :key="j">{{ op }}</div>
           </div>
-          <div class="q-answer">答案:{{ q.answer }} <span v-if="q.analysis">· {{ q.analysis }}</span></div>
         </div>
-        <el-button type="primary" @click="startExam">开始模拟考试</el-button>
+        <el-button type="primary" :loading="starting" @click="startExam">开始模拟考试</el-button>
       </div>
 
       <!-- 作答 -->
-      <div v-else-if="questions && answering" class="q-list">
+      <div v-else-if="questions.length && answering" class="q-list">
+        <el-alert type="warning" :closable="false" show-icon style="margin-bottom:12px"
+                  :title="remainingText ? '剩余时间: ' + remainingText : '本试卷不限时'" />
         <div v-for="(q, i) in questions" :key="q.questionId" class="q-item">
           <div class="q-stem"><b>{{ i + 1 }}.</b> [{{ typeName(q.qtype) }}] {{ q.stem }}</div>
           <template v-if="q.qtype === 0">
             <el-radio-group v-model="answers[q.questionId]">
-              <el-radio v-for="(op, j) in parseOptions(q.options)" :key="j" :label="op">{{ op }}</el-radio>
+              <el-radio v-for="(op, j) in q.options" :key="j" :value="optionKey(op)">{{ op }}</el-radio>
             </el-radio-group>
           </template>
           <template v-else-if="q.qtype === 1">
             <el-checkbox-group v-model="answers[q.questionId]">
-              <el-checkbox v-for="(op, j) in parseOptions(q.options)" :key="j" :label="op">{{ op }}</el-checkbox>
+              <el-checkbox v-for="(op, j) in q.options" :key="j" :value="optionKey(op)">{{ op }}</el-checkbox>
             </el-checkbox-group>
           </template>
           <template v-else-if="q.qtype === 2">
@@ -81,10 +82,9 @@
           </template>
         </div>
         <el-button type="primary" :loading="submitting" @click="submit">交卷</el-button>
-        <el-button @click="answering = false">返回预览</el-button>
       </div>
 
-      <el-empty v-if="tab === 'gen' && !questions" description="选择出处与参数,点击生成题目" />
+      <el-empty v-if="tab === 'gen' && !questions.length" description="选择出处与参数,点击生成题目" />
     </div>
 
     <!-- 考试记录 -->
@@ -92,7 +92,14 @@
       <el-table :data="exams" v-loading="loadingExams">
         <el-table-column prop="title" label="试卷" min-width="200" />
         <el-table-column prop="score" label="得分" width="120" />
-        <el-table-column prop="time" label="时间" width="200" />
+        <el-table-column label="状态" width="100">
+          <template #default="{ row }"><el-tag :type="row.status === 1 ? 'success' : row.status === 2 ? 'danger' : 'warning'">
+            {{ examStatus(row.status) }}
+          </el-tag></template>
+        </el-table-column>
+        <el-table-column label="开始时间" width="170"><template #default="{ row }">{{ formatTime(row.startTime) }}</template></el-table-column>
+        <el-table-column label="结束时间" width="170"><template #default="{ row }">{{ formatTime(row.endTime) }}</template></el-table-column>
+        <el-table-column prop="durationMin" label="限时(分钟)" width="110" />
       </el-table>
       <el-empty v-if="!loadingExams && exams.length === 0" description="暂无考试记录" />
     </div>
@@ -115,8 +122,9 @@
     <!-- 评分结果 -->
     <el-dialog v-model="resultVisible" title="考试结果" width="480px">
       <div v-if="result" class="result">
-        <div class="result-score">得分:{{ result.score }} / {{ result.total }}</div>
-        <el-table :data="result.items" size="small">
+        <el-alert v-if="result.status === 'expired'" type="error" :closable="false" :title="result.message" />
+        <div v-else class="result-score">得分:{{ result.score }} / {{ result.total }}</div>
+        <el-table v-if="result.status !== 'expired'" :data="result.items" size="small">
           <el-table-column label="题号" width="70">
             <template #default="{}">{{ '—' }}</template>
           </el-table-column>
@@ -132,7 +140,7 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { api } from '../api'
 
@@ -150,8 +158,12 @@ const questions = ref([])
 const answering = ref(false)
 const answers = ref({})
 const paperId = ref(null)
+const examId = ref(null)
 const generating = ref(false)
+const starting = ref(false)
 const submitting = ref(false)
+const remainingSec = ref(null)
+let timer = null
 
 const exams = ref([])
 const loadingExams = ref(false)
@@ -162,9 +174,11 @@ const resultVisible = ref(false)
 const result = ref(null)
 
 const typeName = (t) => ({ 0: '单选', 1: '多选', 2: '判断', 3: '填空', 4: '简答' }[t] || '题')
-const parseOptions = (s) => {
-  try { return JSON.parse(s) || [] } catch { return [] }
-}
+const examStatus = (status) => ({ 0: '进行中', 1: '已交卷', 2: '已截止' }[status] || '未知')
+const formatTime = (time) => time ? String(time).replace('T', ' ').slice(0, 19) : '—'
+const optionKey = (option) => String(option || '').match(/^\s*([A-Za-z])(?:[.、:：)）]|\s)/)?.[1]?.toUpperCase() || String(option)
+const remainingText = computed(() => remainingSec.value == null ? ''
+  : `${String(Math.floor(remainingSec.value / 60)).padStart(2, '0')}:${String(remainingSec.value % 60).padStart(2, '0')}`)
 
 const loadResources = async () => {
   resources.value = courseId.value ? await api.listDocs(courseId.value) : []
@@ -184,6 +198,8 @@ const generate = async () => {
     paperId.value = data.paperId
     questions.value = data.questions || []
     answers.value = {}
+    examId.value = null
+    stopTimer()
     generated.value = true
     answering.value = false
     ElMessage.success(data.questions?.length ? '已生成 ' + data.questions.length + ' 道题' : '生成成功')
@@ -192,21 +208,34 @@ const generate = async () => {
   }
 }
 
-const startExam = () => {
-  answers.value = {}
-  answering.value = true
+const startExam = async () => {
+  if (!paperId.value || starting.value) return
+  starting.value = true
+  try {
+    const data = await api.examStart(paperId.value)
+    examId.value = data.examId
+    questions.value = data.questions || []
+    answers.value = {}
+    answering.value = true
+    startTimer(data.deadline)
+  } finally {
+    starting.value = false
+  }
 }
 
 const submit = async () => {
+  if (!examId.value || submitting.value) return
   submitting.value = true
   const list = (questions.value || []).map((q) => ({
     questionId: q.questionId,
     userAnswer: normalizeAnswer(q, answers.value[q.questionId])
   }))
   try {
-    result.value = await api.examSubmit({ paperId: paperId.value, answers: list })
+    result.value = await api.examSubmit({ examId: examId.value, answers: list })
     resultVisible.value = true
     answering.value = false
+    examId.value = null
+    stopTimer()
     await Promise.all([loadExams(), loadMistakes()])
   } finally {
     submitting.value = false
@@ -215,9 +244,31 @@ const submit = async () => {
 
 const normalizeAnswer = (q, v) => {
   if (v == null) return ''
-  if (q.qtype === 0) return String(v).replace(/^(.)\.?.*/, '$1') // 单选取首字母
-  if (q.qtype === 1) return Array.isArray(v) ? v.map((x) => String(x).replace(/^(.)\.?.*/, '$1')).sort().join(',') : String(v)
+  if (q.qtype === 0) return optionKey(v)
+  if (q.qtype === 1) return Array.isArray(v) ? v.map(optionKey).sort().join(',') : String(v)
   return String(v)
+}
+
+const stopTimer = () => {
+  if (timer) clearInterval(timer)
+  timer = null
+  remainingSec.value = null
+}
+
+const startTimer = (deadline) => {
+  stopTimer()
+  if (!deadline) return
+  const tick = () => {
+    remainingSec.value = Math.max(0, Math.ceil((new Date(deadline).getTime() - Date.now()) / 1000))
+    if (remainingSec.value <= 1) {
+      remainingSec.value = 0
+      clearInterval(timer)
+      timer = null
+      submit()
+    }
+  }
+  tick()
+  if (remainingSec.value > 0) timer = setInterval(tick, 1000)
 }
 
 const loadExams = async () => {
@@ -240,6 +291,7 @@ onMounted(async () => {
   courses.value = await api.listCourses()
   await Promise.all([loadExams(), loadMistakes()])
 })
+onBeforeUnmount(stopTimer)
 </script>
 
 <style scoped>

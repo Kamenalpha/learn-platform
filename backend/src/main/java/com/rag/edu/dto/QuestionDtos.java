@@ -18,8 +18,8 @@ public class QuestionDtos {
     }
 
     public record QuestionVO(
-            Long questionId, Integer qtype, String stem, String options, String answer,
-            String analysis, Integer difficulty, Integer sourceType) {
+            Long questionId, Integer qtype, String stem, List<String> options,
+            Integer difficulty, Integer sourceType) {
     }
 
     /** 某道题作答 */
@@ -27,6 +27,6 @@ public class QuestionDtos {
     }
 
     /** 交卷请求 */
-    public record GradeReq(Long paperId, List<GradeItem> answers) {
+    public record GradeReq(Long examId, List<GradeItem> answers) {
     }
 }

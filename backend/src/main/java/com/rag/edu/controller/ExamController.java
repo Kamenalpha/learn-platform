@@ -31,6 +31,11 @@ public class ExamController {
         return Result.ok(examPracticeService.paperDetail(paperId, UserContext.userId()));
     }
 
+    @PostMapping("/paper/{paperId}/start")
+    public Result<Map<String, Object>> start(@PathVariable Long paperId) {
+        return Result.ok(examPracticeService.start(UserContext.userId(), paperId));
+    }
+
     @PostMapping("/submit")
     public Result<Map<String, Object>> submit(@RequestBody GradeReq req) {
         return Result.ok(examPracticeService.grade(UserContext.userId(), req));
