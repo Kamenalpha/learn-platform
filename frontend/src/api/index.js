@@ -170,6 +170,7 @@ export const api = {
   saveKbConfig: (data) => request.put('/admin/kb/config', data),
   kbStatus: () => request.get('/admin/kb/status'),
   rebuildKb: (courseId) => request.post(`/admin/kb/rebuild/${courseId}`, {}, { timeout: 600000 }),
+  kbDebug: (params) => request.get('/admin/kb/debug', { params }),
   statsOverview: () => request.get('/admin/stats/overview'),
   qaTrend: (days) => request.get('/admin/stats/qa-trend', { params: { days } }),
   docsByCourse: () => request.get('/admin/stats/docs-by-course'),

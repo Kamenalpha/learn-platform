@@ -7,8 +7,10 @@ import com.rag.edu.dto.KbDtos.KbConfig;
 import com.rag.edu.entity.DocResource;
 import com.rag.edu.mapper.DocResourceMapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.rag.edu.service.CourseAccessService;
 import com.rag.edu.service.DocumentService;
 import com.rag.edu.service.KbConfigService;
+import com.rag.edu.service.rag.RetrievalService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
@@ -18,7 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 知识库管理(管理员):检索参数配置 / 删除重建 / 运行状态
+ * 知识库管理(管理员):检索参数配置 / 删除重建 / 运行状态 / 检索调试
  */
 @RestController
 @RequestMapping("/api/admin/kb")
@@ -29,6 +31,8 @@ public class KbController {
     private final DocumentService documentService;
     private final DocResourceMapper resourceMapper;
     private final RagProperties props;
+    private final RetrievalService retrievalService;
+    private final CourseAccessService courseAccessService;
 
     @Value("${spring.ai.vectorstore.chroma.client.host:http://localhost}")
     private String chromaHost;
@@ -83,5 +87,25 @@ public class KbController {
         data.put("docParsed", resourceMapper.selectCount(
                 new LambdaQueryWrapper<DocResource>().eq(DocResource::getParseStatus, 1)));
         return Result.ok(data);
+    }
+
+    /**
+     * 检索调试:对一次真实检索做分阶段拆解(关键词分/向量分/融合分/重排分)。
+     * 与问答共用 RetrievalService,保证调试所见即线上所得。
+     */
+    @GetMapping("/debug")
+    public Result<List<Map<String, Object>>> debug(@RequestParam String question,
+                                                   @RequestParam(required = false) Integer topK,
+                                                   @RequestParam(required = false) Double threshold,
+                                                   @RequestParam(required = false) Boolean rerank) {
+        KbConfig cfg = kbConfigService.get();
+        KbConfig debugCfg = new KbConfig(
+                topK == null ? cfg.topK() : topK,
+                threshold == null ? cfg.similarityThreshold() : threshold,
+                cfg.chunkSize(), cfg.chunkOverlap(), cfg.promptSuffix(),
+                rerank == null ? cfg.rerankEnabled() : rerank);
+        Long userId = UserContext.userId();
+        List<Long> courseIds = courseAccessService.listManagedCourseIds(userId);
+        return Result.ok(retrievalService.debug(question, courseIds, userId, debugCfg));
     }
 }
