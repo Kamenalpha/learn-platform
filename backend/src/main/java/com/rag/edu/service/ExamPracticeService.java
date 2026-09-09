@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rag.edu.common.BizException;
+import com.rag.edu.dto.QuestionDtos.AiGradeResult;
+import com.rag.edu.dto.QuestionDtos.GeneratedQuestion;
 import com.rag.edu.dto.QuestionDtos.GenerateReq;
 import com.rag.edu.dto.QuestionDtos.GradeReq;
 import com.rag.edu.dto.QuestionDtos.GradeItem;
@@ -15,6 +17,8 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import org.springframework.core.ParameterizedTypeReference;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -81,39 +85,40 @@ public class ExamPracticeService {
 
         String prompt = """
                 你是命题助手。请根据下面的【学习材料】生成 %d 道题目,题型为:%s,难度%d(1简单2中等3难)。
-                严格按如下 JSON 数组返回,不要输出其它文字,每项字段:
-                {"qtype":题型编号(0单选,1多选,2判断,3填空,4简答),"stem":"题干",\
-                "options":"选择题选项数组JSON(如 [\\"A.选项1\\",\\"B.选项2\\"])或null(非选择题)",\
-                "answer":"答案: 选择题填字母(单选'A'多选'A,B');判断题填'对'或'错';填空/简答填文本",\
-                "analysis":"解析","difficulty":难度编号}
+                要求:选择题必须提供选项;答案格式——选择题填字母(单选"A",多选"A,B");判断题填"对"或"错";填空/简答填参考答案文本;每题附解析。
                 学习材料:
                 %s
                 """.formatted(count, qtypes, difficulty, material);
 
-        String raw;
+        List<GeneratedQuestion> items;
         try {
-            raw = chatClient.prompt().user(prompt).call().content();
+            items = chatClient.prompt().user(prompt).call()
+                    .entity(new ParameterizedTypeReference<List<GeneratedQuestion>>() {
+                    });
         } catch (Exception e) {
             throw new BizException("大模型出题失败: " + e.getMessage());
         }
-        List<JsonNode> items = parseJsonArray(raw);
+        if (items == null || items.isEmpty()) {
+            throw new BizException("生成题目为空,请重试");
+        }
 
         List<Question> questions = new ArrayList<>();
-        for (JsonNode item : items) {
+        for (GeneratedQuestion item : items) {
+            if (item == null || item.stem() == null || item.stem().isBlank()) {
+                continue;
+            }
             Question q = new Question();
             q.setOwnerId(userId);
             q.setResourceId(req.resourceId());
-            q.setQtype(item.path("qtype").asInt(0));
-            q.setStem(item.path("stem").asText(""));
-            q.setOptions(serializeOptions(item.path("options")));
-            q.setAnswer(item.path("answer").asText(""));
-            q.setAnalysis(item.path("analysis").asText(""));
-            q.setDifficulty(item.path("difficulty").asInt(difficulty));
+            q.setQtype(item.qtype() == null ? 0 : item.qtype());
+            q.setStem(item.stem());
+            q.setOptions(serializeOptions(item.options()));
+            q.setAnswer(item.answer() == null ? "" : item.answer());
+            q.setAnalysis(item.analysis() == null ? "" : item.analysis());
+            q.setDifficulty(item.difficulty() == null ? difficulty : item.difficulty());
             q.setSourceType(req.sourceType() == null ? 0 : req.sourceType());
-            if (!q.getStem().isBlank()) {
-                questionMapper.insert(q);
-                questions.add(q);
-            }
+            questionMapper.insert(q);
+            questions.add(q);
         }
         if (questions.isEmpty()) {
             throw new BizException("生成题目为空,请重试");
@@ -302,12 +307,11 @@ public class ExamPracticeService {
         String prompt = """
                 你是阅卷老师。请给下面学生的作答打分(0-100,含小数),并给一句评语。
                 题目:%s  参考答案:%s  学生答案:%s
-                严格返回 JSON:{"score":80.5,"comment":"评语"} ,不要其它文字。
                 """.formatted(q.getStem(), q.getAnswer(), userAnswer == null ? "" : userAnswer);
         try {
-            String raw = chatClient.prompt().user(prompt).call().content();
-            JsonNode node = objectMapper.readTree(extractJson(raw));
-            return map("score", node.path("score").asDouble(), "comment", node.path("comment").asText(""));
+            AiGradeResult result = chatClient.prompt().user(prompt).call().entity(AiGradeResult.class);
+            return map("score", result == null ? 0 : result.score(),
+                    "comment", result == null ? "" : result.comment());
         } catch (Exception e) {
             log.warn("主观题AI评分失败,待人工复核: {}", e.getMessage());
             return map("score", 0, "comment", "AI评分失败,待人工复核");
@@ -392,42 +396,18 @@ public class ExamPracticeService {
         return s.length() > MAX_SOURCE_CHARS ? s.substring(0, MAX_SOURCE_CHARS) : s;
     }
 
-    private List<JsonNode> parseJsonArray(String raw) {
-        int start = raw.indexOf('[');
-        int end = raw.lastIndexOf(']');
-        if (start < 0 || end < start) {
-            return List.of();
-        }
-        try {
-            JsonNode arr = objectMapper.readTree(raw.substring(start, end + 1));
-            List<JsonNode> list = new ArrayList<>();
-            if (arr.isArray()) {
-                arr.forEach(list::add);
-            }
-            return list;
-        } catch (Exception e) {
-            return List.of();
-        }
-    }
-
-    private String extractJson(String raw) {
-        int start = raw.indexOf('{');
-        int end = raw.lastIndexOf('}');
-        return start < 0 || end < start ? "{}" : raw.substring(start, end + 1);
-    }
-
     private QuestionVO toVO(Question q) {
         return new QuestionVO(q.getQuestionId(), q.getQtype(), q.getStem(), parseOptions(q.getOptions()),
                 q.getDifficulty(), q.getSourceType());
     }
 
-    String serializeOptions(JsonNode node) {
-        if (node == null || node.isMissingNode() || node.isNull()) {
+    /** 选项数组序列化为 JSON 字符串落库(选择题);非选择题为 null */
+    String serializeOptions(List<String> options) {
+        if (options == null || options.isEmpty()) {
             return null;
         }
         try {
-            JsonNode options = node.isTextual() ? objectMapper.readTree(node.asText()) : node;
-            return options.isArray() ? objectMapper.writeValueAsString(options) : null;
+            return objectMapper.writeValueAsString(options);
         } catch (Exception e) {
             return null;
         }

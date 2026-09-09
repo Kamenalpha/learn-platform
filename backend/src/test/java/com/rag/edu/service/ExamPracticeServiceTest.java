@@ -33,11 +33,10 @@ class ExamPracticeServiceTest {
             mock(StudyLogService.class), mock(CourseAccessService.class));
 
     @Test
-    void optionsAreStoredAsJsonInsteadOfEmptyText() throws Exception {
-        assertEquals("[\"A.甲\",\"B.乙\"]",
-                service.serializeOptions(objectMapper.readTree("[\"A.甲\",\"B.乙\"]")));
-        assertEquals("[\"A.甲\",\"B.乙\"]",
-                service.serializeOptions(objectMapper.readTree("\"[\\\"A.甲\\\",\\\"B.乙\\\"]\"")));
+    void optionsAreStoredAsJsonArrayAndNullForNonChoice() {
+        assertEquals("[\"A.甲\",\"B.乙\"]", service.serializeOptions(List.of("A.甲", "B.乙")));
+        assertNull(service.serializeOptions(null));
+        assertNull(service.serializeOptions(List.of()));
     }
 
     @Test
