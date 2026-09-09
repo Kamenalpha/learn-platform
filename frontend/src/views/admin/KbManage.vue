@@ -17,6 +17,13 @@
           <el-form-item label="分块重叠(字符)">
             <el-input-number v-model="form.chunkOverlap" :min="0" :max="500" :step="10" />
           </el-form-item>
+          <el-form-item label="重排精排">
+            <el-switch v-model="form.rerankEnabled" active-text="开" inactive-text="关" />
+            <div class="el-form-item__content" style="margin-left: 120px; line-height: 1.4">
+              <span style="font-size: 12px; color: var(--el-text-color-secondary)">
+                开启后对双路召回结果用 BGE-Reranker 精排(需配置 RERANK_API_KEY,默认复用 EMBED_API_KEY);关闭则仅 RRF 融合</span>
+            </div>
+          </el-form-item>
           <el-form-item label="提示词追加">
             <el-input v-model="form.promptSuffix" type="textarea" :rows="3"
               placeholder="追加到系统提示词末尾,如:回答时多结合数字媒体专业的实际应用场景" />
@@ -73,7 +80,8 @@ const form = reactive({
   similarityThreshold: 0.5,
   chunkSize: 500,
   chunkOverlap: 50,
-  promptSuffix: ''
+  promptSuffix: '',
+  rerankEnabled: true
 })
 const saving = ref(false)
 const status = ref({})

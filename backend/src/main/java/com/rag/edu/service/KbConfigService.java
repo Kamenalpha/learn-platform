@@ -22,18 +22,20 @@ public class KbConfigService {
     public KbConfig get() {
         var entries = redis.opsForHash().entries(KEY);
         KbConfig def = new KbConfig(props.getDefaultTopK(), props.getDefaultThreshold(),
-                props.getChunkSize(), props.getChunkOverlap(), "");
+                props.getChunkSize(), props.getChunkOverlap(), "", true);
         String topK = (String) entries.get("topK");
         String threshold = (String) entries.get("similarityThreshold");
         String chunkSize = (String) entries.get("chunkSize");
         String overlap = (String) entries.get("chunkOverlap");
         String suffix = (String) entries.get("promptSuffix");
+        String rerank = (String) entries.get("rerankEnabled");
         return new KbConfig(
                 topK == null ? def.topK() : Integer.parseInt(topK),
                 threshold == null ? def.similarityThreshold() : Double.parseDouble(threshold),
                 chunkSize == null ? def.chunkSize() : Integer.parseInt(chunkSize),
                 overlap == null ? def.chunkOverlap() : Integer.parseInt(overlap),
-                suffix == null ? def.promptSuffix() : suffix);
+                suffix == null ? def.promptSuffix() : suffix,
+                rerank == null ? def.rerankEnabled() : Boolean.parseBoolean(rerank));
     }
 
     public void update(KbConfig config) {
@@ -51,6 +53,9 @@ public class KbConfigService {
         }
         if (config.promptSuffix() != null) {
             redis.opsForHash().put(KEY, "promptSuffix", config.promptSuffix());
+        }
+        if (config.rerankEnabled() != null) {
+            redis.opsForHash().put(KEY, "rerankEnabled", String.valueOf(config.rerankEnabled()));
         }
     }
 }

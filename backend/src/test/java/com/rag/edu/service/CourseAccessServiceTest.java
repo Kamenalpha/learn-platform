@@ -4,6 +4,7 @@ import com.rag.edu.common.BizException;
 import com.rag.edu.common.LoginUser;
 import com.rag.edu.common.UserContext;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.rag.edu.config.RagProperties;
 import com.rag.edu.dto.KbDtos.KbConfig;
 import com.rag.edu.entity.Assistant;
 import com.rag.edu.entity.Course;
@@ -15,6 +16,7 @@ import com.rag.edu.mapper.DocResourceMapper;
 import com.rag.edu.mapper.DocChunkMapper;
 import com.rag.edu.mapper.QaRecordMapper;
 import com.rag.edu.service.rag.ChatService;
+import com.rag.edu.service.rag.RetrievalService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.model.ChatModel;
@@ -106,10 +108,12 @@ class CourseAccessServiceTest {
     void scopedVectorSearchFailsClosed() {
         VectorStore vectorStore = mock(VectorStore.class);
         KbConfigService configService = mock(KbConfigService.class);
-        when(configService.get()).thenReturn(new KbConfig(5, 0.5, 500, 50, null));
+        when(configService.get()).thenReturn(new KbConfig(5, 0.5, 500, 50, null, true));
         when(vectorStore.similaritySearch(any(SearchRequest.class)))
                 .thenThrow(new IllegalStateException("filter unavailable"));
-        ChatService chatService = new ChatService(mock(ChatModel.class), vectorStore, configService,
+        RetrievalService retrievalService = new RetrievalService(vectorStore,
+                mock(DocChunkMapper.class), access, new RagProperties(), new ObjectMapper());
+        ChatService chatService = new ChatService(mock(ChatModel.class), configService, retrievalService,
                 mock(StringRedisTemplate.class), mock(QaRecordMapper.class), mock(DocChunkMapper.class),
                 new ObjectMapper(), access);
 

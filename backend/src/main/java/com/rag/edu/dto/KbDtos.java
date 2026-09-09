@@ -11,7 +11,7 @@ public class KbDtos {
 
     /** 检索参数配置(管理后台可调,存于 Redis) */
     public record KbConfig(Integer topK, Double similarityThreshold, Integer chunkSize,
-                           Integer chunkOverlap, String promptSuffix) {
+                           Integer chunkOverlap, String promptSuffix, Boolean rerankEnabled) {
     }
 
     /** 知识图谱数据 */

@@ -17,8 +17,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.document.Document;
-import org.springframework.ai.vectorstore.SearchRequest;
-import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
@@ -52,21 +50,21 @@ public class ChatService {
     private static final long HISTORY_TTL_HOURS = 24;
 
     private final ChatClient chatClient;
-    private final VectorStore vectorStore;
     private final KbConfigService kbConfigService;
+    private final RetrievalService retrievalService;
     private final StringRedisTemplate redis;
     private final QaRecordMapper qaRecordMapper;
     private final DocChunkMapper chunkMapper;
     private final ObjectMapper objectMapper;
     private final CourseAccessService courseAccessService;
 
-    public ChatService(ChatModel chatModel, VectorStore vectorStore, KbConfigService kbConfigService,
+    public ChatService(ChatModel chatModel, KbConfigService kbConfigService, RetrievalService retrievalService,
                        StringRedisTemplate redis, QaRecordMapper qaRecordMapper,
                        DocChunkMapper chunkMapper, ObjectMapper objectMapper,
                        CourseAccessService courseAccessService) {
         this.chatClient = ChatClient.builder(chatModel).build();
-        this.vectorStore = vectorStore;
         this.kbConfigService = kbConfigService;
+        this.retrievalService = retrievalService;
         this.redis = redis;
         this.qaRecordMapper = qaRecordMapper;
         this.chunkMapper = chunkMapper;
@@ -146,30 +144,9 @@ public class ChatService {
         int historyTurns = normalizeHistoryTurns(assistant == null ? null : assistant.contextRounds());
         boolean withReference = assistant == null || !Objects.equals(assistant.withReference(), 0);
 
-        // 1. 相似度检索:问题 -> 向量,召回 Top-K 知识块。
-        //    若指定助手且绑定课程,则限定在绑定课程内检索(知识隔离)。
-        Integer topK = cfg.topK() == null ? 5 : cfg.topK();
-        Double threshold = cfg.similarityThreshold() == null ? 0.5 : cfg.similarityThreshold();
-        List<Document> hits = List.of();
-        if (courseIds != null && !courseIds.isEmpty()) {
-            String expr = "courseId in ['" + courseIds.stream()
-                    .map(String::valueOf).collect(java.util.stream.Collectors.joining("', '")) + "']";
-            SearchRequest scoped = SearchRequest.builder().query(question).topK(topK)
-                    .similarityThreshold(threshold).filterExpression(expr).build();
-            try {
-                hits = vectorStore.similaritySearch(scoped);
-            } catch (Exception e) {
-                log.error("限定课程检索失败,已阻止全库回退", e);
-                throw new BizException("知识库检索失败,请稍后重试");
-            }
-        }
-        if (hits == null) {
-            hits = List.of();
-        }
-        hits = hits.stream().filter(hit -> {
-            Long docId = parseLong(hit.getMetadata().get("docId"));
-            return docId != null && courseAccessService.canReadResource(docId, userId);
-        }).toList();
+        // 1. 混合检索:向量 + 关键词 双路召回,RRF 融合,可选重排(统一入口 RetrievalService)。
+        //    若指定助手且绑定课程,则限定在绑定课程内检索(知识隔离,RetrievalService 内做权限过滤)。
+        List<Document> hits = retrievalService.retrieve(question, courseIds, userId, cfg);
 
         // 2. 组装引用来源与知识上下文
         List<Source> sources = new ArrayList<>();
@@ -181,7 +158,7 @@ public class ChatService {
             Integer page = parsePage(meta.get("page"));
             String text = hit.getText() == null ? "" : hit.getText();
             sources.add(new Source(docId, str(meta.get("docTitle")), page,
-                    findChunkId(docId, meta.get("vectorId")), hit.getScore(), abbreviate(text, 200)));
+                    chunkIdOf(meta, docId), hit.getScore(), abbreviate(text, 200)));
             context.append('[').append(no++).append("] ")
                     .append(str(meta.get("docTitle")))
                     .append(page != null ? "(第" + page + "页)" : "")
@@ -259,6 +236,15 @@ public class ChatService {
         } catch (Exception e) {
             log.warn("保存对话上下文失败: {}", e.getMessage());
         }
+    }
+
+    private Long chunkIdOf(Map<String, Object> meta, Long docId) {
+        // 混合检索已带回 chunkId(关键词路),向量路回退到按 vectorId 反查
+        Object cid = meta.get("chunkId");
+        if (cid != null) {
+            return parseLong(cid);
+        }
+        return findChunkId(docId, meta.get("vectorId"));
     }
 
     private Long findChunkId(Long docId, Object vectorId) {

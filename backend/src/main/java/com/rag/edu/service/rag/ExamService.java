@@ -1,13 +1,12 @@
 package com.rag.edu.service.rag;
 
 import com.rag.edu.common.BizException;
+import com.rag.edu.dto.KbDtos.KbConfig;
 import com.rag.edu.entity.Course;
 import com.rag.edu.service.CourseAccessService;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.document.Document;
-import org.springframework.ai.vectorstore.SearchRequest;
-import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -27,12 +26,13 @@ public class ExamService {
             """;
 
     private final CourseAccessService courseAccessService;
-    private final VectorStore vectorStore;
+    private final RetrievalService retrievalService;
     private final ChatClient chatClient;
 
-    public ExamService(CourseAccessService courseAccessService, VectorStore vectorStore, ChatModel chatModel) {
+    public ExamService(CourseAccessService courseAccessService, RetrievalService retrievalService,
+                       ChatModel chatModel) {
         this.courseAccessService = courseAccessService;
-        this.vectorStore = vectorStore;
+        this.retrievalService = retrievalService;
         this.chatClient = ChatClient.builder(chatModel).build();
     }
 
@@ -42,24 +42,9 @@ public class ExamService {
                 ? course.getCourseName() + " 核心知识点 考点"
                 : course.getCourseName() + " " + chapter;
 
-        String filter = "courseId == '" + courseId + "'";
-        List<Document> hits;
-        try {
-            hits = vectorStore.similaritySearch(SearchRequest.builder()
-                    .query(query).topK(10).similarityThreshold(0.3).filterExpression(filter).build());
-        } catch (Exception e) {
-            throw new BizException("课程知识库检索失败,请稍后重试");
-        }
-        hits = hits == null ? List.of() : hits.stream()
-                .filter(hit -> {
-                    Object docId = hit.getMetadata().get("docId");
-                    try {
-                        return docId != null && courseAccessService.canReadResource(
-                                Long.valueOf(docId.toString()), userId);
-                    } catch (NumberFormatException e) {
-                        return false;
-                    }
-                }).toList();
+        // 统一检索入口(双路召回+融合),权限过滤在 RetrievalService 内完成;出题保持 TopK=10、阈值 0.3
+        List<Document> hits = retrievalService.retrieve(query, List.of(courseId), userId,
+                new KbConfig(10, 0.3, null, null, null, false));
         if (hits == null || hits.isEmpty()) {
             throw new BizException("该课程知识库暂无内容,请先上传并解析课件文档");
         }

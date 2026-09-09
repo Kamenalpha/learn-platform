@@ -39,4 +39,13 @@ public class RagProperties {
 
     /** OCR 最大识别页数(避免成本失控),默认 30 */
     private int ocrMaxPages = 30;
+
+    /** 重排服务地址(SiliconFlow 兼容 /v1/rerank),为空则重排关闭 */
+    private String rerankBaseUrl = "https://api.siliconflow.cn";
+
+    /** 重排模型 */
+    private String rerankModel = "BAAI/bge-reranker-v2-m3";
+
+    /** 重排 API Key,为空则重排关闭(可复用 EMBED_API_KEY) */
+    private String rerankApiKey = "";
 }
