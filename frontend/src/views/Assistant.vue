@@ -24,7 +24,7 @@
       <template v-else>
         <div class="chat-head">
           <span class="asst-title">{{ current.name }}</span>
-          <el-tag size="small" type="info">{{ current.model || 'deepseek-chat' }} · 引用{{ current.withReference ? '开' : '关' }}</el-tag>
+          <el-tag size="small" type="info">{{ styleName(current.style) }} · 引用{{ current.withReference ? '开' : '关' }}</el-tag>
         </div>
         <div class="chat-body" ref="bodyRef">
           <div v-for="(m, i) in messages" :key="i" class="msg-row" :class="m.role">
@@ -60,16 +60,15 @@
         </el-form-item>
         <el-form-item label="系统提示词">
           <el-input v-model="form.systemPrompt" type="textarea" :rows="3"
-                    placeholder="留空则用默认。可写:你是XX课程的助教,回答简洁并引用教材…" />
+                    placeholder="可补充教学方式与表达偏好；不能覆盖知识库限定与防编造规则" />
         </el-form-item>
-        <el-form-item label="模型">
-          <el-select v-model="form.model" style="width:160px">
-            <el-option label="deepseek-chat" value="deepseek-chat" />
-            <el-option label="qwen-plus" value="qwen-plus" />
+        <el-form-item label="回答风格">
+          <el-select v-model="form.style" style="width:200px">
+            <el-option label="标准" value="default" />
+            <el-option label="简洁" value="concise" />
+            <el-option label="详细" value="detailed" />
+            <el-option label="启发式导师" value="tutor" />
           </el-select>
-        </el-form-item>
-        <el-form-item label="温度">
-          <el-slider v-model="form.temperature" :min="0" :max="1" :step="0.05" style="width:260px" />
         </el-form-item>
         <el-form-item label="上下文轮数"><el-input-number v-model="form.contextRounds" :min="0" :max="10" /></el-form-item>
         <el-form-item label="引用来源">
@@ -118,8 +117,10 @@ const refSelect = ref(null)
 
 function defaultForm() {
   return { assistantId: null, name: '', courseIds: [], systemPrompt: '', model: 'deepseek-chat',
-    temperature: 0.7, contextRounds: 3, withReference: 1 }
+    temperature: 0.7, style: 'default', contextRounds: 3, withReference: 1 }
 }
+
+const styleName = (style) => ({ default: '标准', concise: '简洁', detailed: '详细', tutor: '启发式导师' }[style] || '标准')
 
 const load = async () => {
   assistants.value = await api.listAssistants()
@@ -170,7 +171,7 @@ const openManage = (a) => {
   editing.value = !!a
   form.value = a ? { assistantId: a.assistantId, name: a.name, courseIds: a.courseIds || [],
     systemPrompt: a.systemPrompt || '', model: a.model || 'deepseek-chat', temperature: a.temperature ?? 0.7,
-    contextRounds: a.contextRounds ?? 3, withReference: a.withReference ?? 1 } : defaultForm()
+    style: a.style || 'default', contextRounds: a.contextRounds ?? 3, withReference: a.withReference ?? 1 } : defaultForm()
   manageVisible.value = true
 }
 

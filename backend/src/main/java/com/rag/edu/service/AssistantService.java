@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * AI 助手配置管理:支持为不同课程定制助手,并以绑定课程实现知识隔离.
@@ -21,6 +22,8 @@ import java.util.Objects;
 @Service
 @RequiredArgsConstructor
 public class AssistantService {
+
+    private static final Set<String> STYLES = Set.of("default", "concise", "detailed", "tutor");
 
     private final AssistantMapper assistantMapper;
     private final AssistantCourseMapper assistantCourseMapper;
@@ -46,17 +49,22 @@ public class AssistantService {
     @Transactional
     public AssistantVO save(AssistantSaveReq req, Long userId) {
         courseAccessService.requireManagedCourses(req.courseIds(), userId);
+        int contextRounds = req.contextRounds() == null ? 3 : req.contextRounds();
+        if (contextRounds < 0 || contextRounds > 10) {
+            throw new BizException("上下文轮数需在0到10之间");
+        }
+        String style = req.style() != null && STYLES.contains(req.style()) ? req.style() : "default";
         Assistant a = new Assistant();
         a.setAssistantId(req.assistantId());
         a.setUserId(userId);
         a.setName(req.name());
         a.setAvatar(req.avatar() == null ? "" : req.avatar());
         a.setSystemPrompt(req.systemPrompt());
-        a.setModel(req.model());
-        a.setTemperature(req.temperature());
-        a.setStyle(req.style() == null ? "default" : req.style());
-        a.setContextRounds(req.contextRounds() == null ? 3 : req.contextRounds());
-        a.setWithReference(req.withReference() == null ? 1 : req.withReference());
+        a.setModel(req.model() == null ? "" : req.model());
+        a.setTemperature(req.temperature() == null ? 0.7 : req.temperature());
+        a.setStyle(style);
+        a.setContextRounds(contextRounds);
+        a.setWithReference(Objects.equals(req.withReference(), 0) ? 0 : 1);
         a.setScopeType(req.scopeType() == null ? 0 : req.scopeType());
         a.setStatus(1);
         if (a.getAssistantId() == null) {

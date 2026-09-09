@@ -1,6 +1,7 @@
 package com.rag.edu.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
 import java.util.List;
 
@@ -10,7 +11,7 @@ import java.util.List;
 public class ChatDtos {
 
     public record AskReq(
-            @NotBlank(message = "会话ID不能为空") String sessionId,
+            @NotBlank(message = "会话ID不能为空") @Size(max = 64, message = "会话ID不能超过64个字符") String sessionId,
             @NotBlank(message = "问题不能为空") String question,
             Long assistantId) {
     }

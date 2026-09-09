@@ -36,26 +36,24 @@ public class ChatController {
     @PostMapping("/ask")
     public Result<AskResp> ask(@Valid @RequestBody AskReq req) {
         List<Long> courseIds = courseAccessService.listManagedCourseIds(UserContext.userId());
-        String prompt = null;
+        AssistantVO assistant = null;
         if (req.assistantId() != null) {
-            AssistantVO a = assistantService.getDetail(req.assistantId(), UserContext.userId());
-            courseIds = a.courseIds();
-            prompt = a.systemPrompt();
+            assistant = assistantService.getDetail(req.assistantId(), UserContext.userId());
+            courseIds = assistant.courseIds();
         }
-        return Result.ok(chatService.ask(UserContext.userId(), req.sessionId(), req.question(), courseIds, prompt));
+        return Result.ok(chatService.ask(UserContext.userId(), req.sessionId(), req.question(), courseIds, assistant));
     }
 
     /** 流式提问(SSE):先推引用来源,再逐段推送回答,结束时落库并回传记录ID */
     @PostMapping(value = "/ask/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<String> askStream(@Valid @RequestBody AskReq req) {
         List<Long> courseIds = courseAccessService.listManagedCourseIds(UserContext.userId());
-        String prompt = null;
+        AssistantVO assistant = null;
         if (req.assistantId() != null) {
-            AssistantVO a = assistantService.getDetail(req.assistantId(), UserContext.userId());
-            courseIds = a.courseIds();
-            prompt = a.systemPrompt();
+            assistant = assistantService.getDetail(req.assistantId(), UserContext.userId());
+            courseIds = assistant.courseIds();
         }
-        return chatService.askStream(UserContext.userId(), req.sessionId(), req.question(), courseIds, prompt);
+        return chatService.askStream(UserContext.userId(), req.sessionId(), req.question(), courseIds, assistant);
     }
 
     /** 当前用户的会话列表 */
