@@ -123,7 +123,7 @@ npm run dev    # http://localhost:5173,/api 自动代理到 8080
 | `NEWS_RSS_FEEDS` | (见 application.yml) | 资讯源列表,每项 `来源名\|分类\|RSS地址`,逗号分隔 |
 
 ## 六、RAG 核心链路
-1. 文档摄入解析(PDF/Word/PPT/TXT,扫描件走 OCR,保留页码)。2. 递归字符分块。3. 向量化嵌入。4. 写入 Chroma。5. 问题向量检索 Top-K。6. (可选)召回重排。7. 大模型生成带引用回答。后续统一入 `doc_chunk`/`qa_record`。
+1. 文档摄入解析(PDF/Word/PPT/TXT,扫描件走 OCR,保留页码)。2. 递归字符分块。3. 向量化嵌入。4. 写入 Chroma。5. **混合检索**(Chroma 向量 + MySQL ngram 关键词双路召回)RRF 融合,可选 **BGE-Reranker 重排**(管理端开关,需 `RERANK_API_KEY`,默认复用 `EMBED_API_KEY`)。6. 大模型生成带引用回答。后续统一入 `doc_chunk`/`qa_record`;管理端「检索测试」页可查看各阶段召回明细(先执行 `sql/upgrade_fulltext_index.sql` 建全文索引)。
 
 > 该链路不仅用于问答,也支撑"AI 助手限定课程检索"与"出题模拟"(从教材/重点/样卷生成题目)。
 
@@ -134,4 +134,4 @@ npm run dev    # http://localhost:5173,/api 自动代理到 8080
 - **登录不上** → 先确认后端启动、`learn_platform` 已建库、`DB_PASSWORD` 正确。
 
 ## 八、后续可扩展(论文展望)
-召回重排序(BGE-Reranker)、混合检索、移动端 Vant 组件强化、多模态(图片/视频)检索、语音提问、成本配额执行。
+移动端 Vant 组件强化、多模态(图片/视频)检索、语音提问、成本配额执行、引用点击跳转 PDF 原文高亮。
