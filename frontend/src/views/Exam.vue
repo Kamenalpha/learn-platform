@@ -42,7 +42,8 @@
       </el-form>
 
       <el-alert v-if="generated" type="success" :closable="false" show-icon
-                title="试卷已生成。正式考试开始后计时,答案将在交卷后判定。" style="margin-bottom:12px" />
+                :title="genFrom === 'variant' ? '变式训练卷已生成,本卷不限时,开始后即可作答。' : '试卷已生成。正式考试开始后计时,答案将在交卷后判定。'"
+                style="margin-bottom:12px" />
 
       <!-- 预览 -->
       <div v-if="questions.length && !answering" class="q-list">
@@ -90,7 +91,11 @@
     <!-- 考试记录 -->
     <div v-if="tab === 'record'">
       <el-table :data="exams" v-loading="loadingExams">
-        <el-table-column prop="title" label="试卷" min-width="200" />
+        <el-table-column prop="title" label="试卷" min-width="200">
+          <template #default="{ row }">
+            <el-tag v-if="row.sourceType === 3" size="small" type="warning" style="margin-right:6px">变式训练</el-tag>{{ row.title }}
+          </template>
+        </el-table-column>
         <el-table-column prop="score" label="得分" width="120" />
         <el-table-column label="状态" width="100">
           <template #default="{ row }"><el-tag :type="row.status === 1 ? 'success' : row.status === 2 ? 'danger' : 'warning'">
@@ -110,8 +115,9 @@
         <el-table-column prop="stem" label="题干" min-width="260" />
         <el-table-column prop="answer" label="正确答案" width="140" />
         <el-table-column prop="wrongCount" label="错次" width="80" />
-        <el-table-column label="操作" width="120">
+        <el-table-column label="操作" width="190">
           <template #default="{ row }">
+            <el-button size="small" type="warning" plain :loading="variantLoadingId === row.mistakeId" @click="genVariants(row)">变式训练</el-button>
             <el-button size="small" type="primary" plain @click="master(row)">已掌握</el-button>
           </template>
         </el-table-column>
@@ -285,6 +291,29 @@ const master = async (row) => {
   await api.masterMistake(row.mistakeId)
   ElMessage.success('已标记掌握')
   await loadMistakes()
+}
+
+const variantLoadingId = ref(null)
+const genFrom = ref('normal')
+
+const genVariants = async (row) => {
+  if (variantLoadingId.value) return
+  variantLoadingId.value = row.mistakeId
+  try {
+    const data = await api.generateVariants(row.mistakeId)
+    paperId.value = data.paperId
+    questions.value = data.questions || []
+    answers.value = {}
+    examId.value = null
+    stopTimer()
+    generated.value = true
+    answering.value = false
+    genFrom.value = 'variant'
+    tab.value = 'gen'
+    ElMessage.success('已生成 ' + (data.questions?.length || 0) + ' 道变式题,开始后即可作答')
+  } finally {
+    variantLoadingId.value = null
+  }
 }
 
 onMounted(async () => {

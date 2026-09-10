@@ -56,4 +56,10 @@ public class ExamController {
         examPracticeService.masterMistake(UserContext.userId(), mistakeId);
         return Result.ok();
     }
+
+    /** 错题变式训练:按错题生成同考点变式题并自动组轻量练习卷 */
+    @PostMapping("/mistakes/{mistakeId}/variants")
+    public Result<Map<String, Object>> generateVariants(@PathVariable Long mistakeId) {
+        return Result.ok(examPracticeService.generateVariants(UserContext.userId(), mistakeId));
+    }
 }

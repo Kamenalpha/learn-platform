@@ -21,6 +21,7 @@ public class Paper {
 
     private String title;
 
+    /** 0教材块 1用户重点 2样卷 3变式训练 */
     private Integer sourceType;
 
     private Integer difficulty;

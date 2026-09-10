@@ -38,7 +38,7 @@ public class Question {
     /** 1简单 2中等 3难 */
     private Integer difficulty;
 
-    /** 0教材块 1用户重点 2样卷 */
+    /** 0教材块 1用户重点 2样卷 3变式训练 */
     private Integer sourceType;
 
     private LocalDateTime createTime;

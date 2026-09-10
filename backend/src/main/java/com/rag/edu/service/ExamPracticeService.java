@@ -32,6 +32,8 @@ import java.util.*;
 public class ExamPracticeService {
 
     private static final int MAX_SOURCE_CHARS = 4000;
+    /** 试卷/题目出处扩展值:3=变式训练(原枚举 0教材块 1用户重点 2样卷) */
+    static final int SOURCE_VARIANT = 3;
 
     private final ChatClient chatClient;
     private final ObjectMapper objectMapper;
@@ -42,6 +44,7 @@ public class ExamPracticeService {
     private final ExamRecordMapper examRecordMapper;
     private final ExamAnswerMapper examAnswerMapper;
     private final MistakeMapper mistakeMapper;
+    private final KnowledgePointMapper knowledgePointMapper;
     private final StudyLogService studyLogService;
     private final CourseAccessService courseAccessService;
 
@@ -49,7 +52,8 @@ public class ExamPracticeService {
                                QuestionMapper questionMapper, PaperMapper paperMapper,
                                PaperQuestionMapper paperQuestionMapper, ExamRecordMapper examRecordMapper,
                                ExamAnswerMapper examAnswerMapper, MistakeMapper mistakeMapper,
-                               StudyLogService studyLogService, CourseAccessService courseAccessService) {
+                               KnowledgePointMapper knowledgePointMapper, StudyLogService studyLogService,
+                               CourseAccessService courseAccessService) {
         this.chatClient = ChatClient.builder(chatModel).build();
         this.objectMapper = objectMapper;
         this.sourceMapper = sourceMapper;
@@ -59,6 +63,7 @@ public class ExamPracticeService {
         this.examRecordMapper = examRecordMapper;
         this.examAnswerMapper = examAnswerMapper;
         this.mistakeMapper = mistakeMapper;
+        this.knowledgePointMapper = knowledgePointMapper;
         this.studyLogService = studyLogService;
         this.courseAccessService = courseAccessService;
     }
@@ -351,7 +356,8 @@ public class ExamPracticeService {
             }
             return map("examId", e.getExamId(), "title", p == null ? "" : p.getTitle(),
                     "score", e.getScore(), "status", e.getStatus(), "startTime", e.getStartTime(),
-                    "endTime", e.getEndTime(), "durationMin", durationMin);
+                    "endTime", e.getEndTime(), "durationMin", durationMin,
+                    "sourceType", p == null ? null : p.getSourceType());
         }).toList();
     }
 
@@ -374,6 +380,131 @@ public class ExamPracticeService {
             m.setMastered(1);
             mistakeMapper.updateById(m);
         }
+    }
+
+    /**
+     * 错题变式训练:取原题+该生最近一次错误作答+解析,生成同考点变式题并自动组成轻量练习卷
+     * (sourceType=3 变式训练,不限时)。变式题以原题为锚,不走知识库检索。
+     */
+    @Transactional
+    public Map<String, Object> generateVariants(Long userId, Long mistakeId) {
+        Mistake mistake = mistakeMapper.selectById(mistakeId);
+        if (mistake == null || !Objects.equals(mistake.getUserId(), userId)) {
+            throw new BizException(404, "错题不存在");
+        }
+        Question origin = questionMapper.selectById(mistake.getQuestionId());
+        if (origin == null) {
+            throw new BizException(404, "原题已不存在");
+        }
+        String kpName = null;
+        if (origin.getKpId() != null) {
+            KnowledgePoint kp = knowledgePointMapper.selectById(origin.getKpId());
+            kpName = kp == null ? null : kp.getKpName();
+        }
+        String lastWrongAnswer = findLastWrongAnswer(userId, origin.getQuestionId());
+
+        String prompt = """
+                你是命题助手。下面是一道学生做错的【原题】和他的【错误作答】。请围绕同一考点生成 3 道变式题:
+                改变数字/情境/问法,但考点、题型和难度与原题保持一致,不得重复原题。
+                要求:选择题必须提供选项;答案格式——选择题填字母(单选"A",多选"A,B");判断题填"对"或"错";
+                填空/简答填参考答案文本;每题附解析,解析需针对学生原来的错误点讲解。
+                原题(题型%d,难度%d):%s
+                选项:%s
+                参考答案:%s
+                解析:%s
+                知识点:%s
+                学生错误作答:%s
+                """.formatted(nullSafe(origin.getQtype()), nullSafe(origin.getDifficulty()), origin.getStem(),
+                origin.getOptions() == null ? "无" : origin.getOptions(),
+                origin.getAnswer() == null ? "无" : origin.getAnswer(),
+                origin.getAnalysis() == null ? "无" : origin.getAnalysis(),
+                kpName == null ? "未标注" : kpName,
+                lastWrongAnswer == null ? "无记录" : lastWrongAnswer);
+
+        List<GeneratedQuestion> items = requestVariants(prompt);
+        List<Question> questions = new ArrayList<>();
+        for (GeneratedQuestion item : items == null ? List.<GeneratedQuestion>of() : items) {
+            if (item == null || item.stem() == null || item.stem().isBlank()) {
+                continue;
+            }
+            Question q = new Question();
+            q.setOwnerId(userId);
+            q.setResourceId(origin.getResourceId());
+            q.setKpId(origin.getKpId());
+            q.setQtype(item.qtype() == null ? origin.getQtype() : item.qtype());
+            q.setStem(item.stem());
+            q.setOptions(serializeOptions(item.options()));
+            q.setAnswer(item.answer() == null ? "" : item.answer());
+            q.setAnalysis(item.analysis() == null ? "" : item.analysis());
+            q.setDifficulty(item.difficulty() == null ? origin.getDifficulty() : item.difficulty());
+            q.setSourceType(SOURCE_VARIANT);
+            questionMapper.insert(q);
+            questions.add(q);
+        }
+        if (questions.isEmpty()) {
+            throw new BizException("变式题生成失败,请重试");
+        }
+
+        Paper paper = new Paper();
+        paper.setUserId(userId);
+        paper.setTitle("变式训练 · " + (kpName != null ? kpName : truncate(origin.getStem(), 16)));
+        paper.setSourceType(SOURCE_VARIANT);
+        paper.setDifficulty(origin.getDifficulty());
+        paper.setTotalScore(questions.size() * 10);
+        paper.setDurationMin(0);
+        paperMapper.insert(paper);
+        int order = 0;
+        for (Question q : questions) {
+            PaperQuestion pq = new PaperQuestion();
+            pq.setPaperId(paper.getPaperId());
+            pq.setQuestionId(q.getQuestionId());
+            pq.setScore(10);
+            pq.setOrderNum(order++);
+            paperQuestionMapper.insert(pq);
+        }
+        return map("paperId", paper.getPaperId(), "title", paper.getTitle(),
+                "questions", questions.stream().map(this::toVO).toList());
+    }
+
+    /** 结构化输出生成变式题(LLM 调用收口,便于单测覆写) */
+    List<GeneratedQuestion> requestVariants(String prompt) {
+        try {
+            return chatClient.prompt().user(prompt).call()
+                    .entity(new ParameterizedTypeReference<List<GeneratedQuestion>>() {
+                    });
+        } catch (Exception e) {
+            throw new BizException("大模型出题失败: " + e.getMessage());
+        }
+    }
+
+    /** 该生这道题最近一次"判错"的作答内容;无记录返回 null */
+    private String findLastWrongAnswer(Long userId, Long questionId) {
+        List<ExamRecord> records = examRecordMapper.selectList(new LambdaQueryWrapper<ExamRecord>()
+                .eq(ExamRecord::getUserId, userId).orderByDesc(ExamRecord::getCreateTime).last("LIMIT 50"));
+        for (ExamRecord r : records) {
+            ExamAnswer ea = examAnswerMapper.selectOne(new LambdaQueryWrapper<ExamAnswer>()
+                    .eq(ExamAnswer::getExamId, r.getExamId())
+                    .eq(ExamAnswer::getQuestionId, questionId)
+                    .eq(ExamAnswer::getIsCorrect, 0)
+                    .isNotNull(ExamAnswer::getUserAnswer)
+                    .orderByDesc(ExamAnswer::getCreateTime)
+                    .last("LIMIT 1"));
+            if (ea != null && !ea.getUserAnswer().isBlank()) {
+                return ea.getUserAnswer();
+            }
+        }
+        return null;
+    }
+
+    private String truncate(String s, int max) {
+        if (s == null) {
+            return "";
+        }
+        return s.length() > max ? s.substring(0, max) + "…" : s;
+    }
+
+    private int nullSafe(Integer v) {
+        return v == null ? 0 : v;
     }
 
     private String gatherMaterial(Long userId, GenerateReq req) {

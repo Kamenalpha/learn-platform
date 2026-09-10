@@ -98,6 +98,7 @@ export const api = {
   examList: () => request.get('/exam/exams'),
   mistakes: () => request.get('/exam/mistakes'),
   masterMistake: (id) => request.post(`/exam/mistakes/${id}/master`),
+  generateVariants: (id) => request.post(`/exam/mistakes/${id}/variants`, {}, { timeout: 300000 }),
 
   // 项目辅导
   listProjects: () => request.get('/projects'),
