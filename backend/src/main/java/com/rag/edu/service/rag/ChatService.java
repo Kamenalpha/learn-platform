@@ -149,6 +149,32 @@ public class ChatService {
         List<Document> hits = retrievalService.retrieve(question, courseIds, userId, cfg);
 
         // 2. 组装引用来源与知识上下文
+        SourceContext sc = buildSourceContext(hits);
+
+        // 3. 携带最近多轮对话历史(Redis),支持上下文追问
+        String history = loadHistory(userId, sessionId, historyTurns);
+        String userMessage = (history.isEmpty() ? "" : "【对话历史】\n" + history + "\n")
+                + "【知识上下文】\n" + (sc.context().isEmpty() ? "(无)" : sc.context())
+                + "【问题】" + question + "\n请依据以上规则回答。";
+
+        // 4. 平台知识库约束始终保留;助手提示词只能补充表达与教学偏好。
+        String sys = buildSystemPrompt(cfg.promptSuffix(), assistant, withReference);
+        return new PreparedCtx(withReference ? sc.sources() : List.of(), userMessage, sys, historyTurns);
+    }
+
+    private record PreparedCtx(List<Source> sources, String userMessage, String sys, int historyTurns) {
+    }
+
+    /** 引用来源与知识上下文的装配结果: sources 随回答返回供前端溯源跳转, context 拼进提示词 */
+    record SourceContext(List<Source> sources, String context) {
+    }
+
+    /**
+     * 引用来源与知识上下文装配(同步/流式共用)。
+     * Source 的 docId/page/chunkId/snippet 是前端"点击引用 → 查看原文第 N 页"跳转的数据契约,
+     * 无页码的块(TXT/Word)page 为 null,前端据此降级为只展示片段。
+     */
+    SourceContext buildSourceContext(List<Document> hits) {
         List<Source> sources = new ArrayList<>();
         StringBuilder context = new StringBuilder();
         int no = 1;
@@ -164,19 +190,7 @@ public class ChatService {
                     .append(page != null ? "(第" + page + "页)" : "")
                     .append('\n').append(text).append("\n\n");
         }
-
-        // 3. 携带最近多轮对话历史(Redis),支持上下文追问
-        String history = loadHistory(userId, sessionId, historyTurns);
-        String userMessage = (history.isEmpty() ? "" : "【对话历史】\n" + history + "\n")
-                + "【知识上下文】\n" + (context.isEmpty() ? "(无)" : context)
-                + "【问题】" + question + "\n请依据以上规则回答。";
-
-        // 4. 平台知识库约束始终保留;助手提示词只能补充表达与教学偏好。
-        String sys = buildSystemPrompt(cfg.promptSuffix(), assistant, withReference);
-        return new PreparedCtx(withReference ? sources : List.of(), userMessage, sys, historyTurns);
-    }
-
-    private record PreparedCtx(List<Source> sources, String userMessage, String sys, int historyTurns) {
+        return new SourceContext(sources, context.toString());
     }
 
     private QaRecord persist(Long userId, String sessionId, String question,
