@@ -13,6 +13,7 @@ import com.rag.edu.mapper.DocChunkMapper;
 import com.rag.edu.mapper.QaRecordMapper;
 import com.rag.edu.service.KbConfigService;
 import com.rag.edu.service.CourseAccessService;
+import com.rag.edu.service.QuotaService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
@@ -57,11 +58,12 @@ public class ChatService {
     private final DocChunkMapper chunkMapper;
     private final ObjectMapper objectMapper;
     private final CourseAccessService courseAccessService;
+    private final QuotaService quotaService;
 
     public ChatService(ChatModel chatModel, KbConfigService kbConfigService, RetrievalService retrievalService,
                        StringRedisTemplate redis, QaRecordMapper qaRecordMapper,
                        DocChunkMapper chunkMapper, ObjectMapper objectMapper,
-                       CourseAccessService courseAccessService) {
+                       CourseAccessService courseAccessService, QuotaService quotaService) {
         this.chatClient = ChatClient.builder(chatModel).build();
         this.kbConfigService = kbConfigService;
         this.retrievalService = retrievalService;
@@ -70,10 +72,12 @@ public class ChatService {
         this.chunkMapper = chunkMapper;
         this.objectMapper = objectMapper;
         this.courseAccessService = courseAccessService;
+        this.quotaService = quotaService;
     }
 
     public AskResp ask(Long userId, String sessionId, String question,
                        List<Long> courseIds, AssistantVO assistant) {
+        quotaService.checkQuota(userId, QuotaService.CHAT);
         long start = System.currentTimeMillis();
         PreparedCtx ctx = prepare(userId, sessionId, question, courseIds, assistant);
 
@@ -93,6 +97,7 @@ public class ChatService {
         saveHistory(userId, sessionId, question, answer, ctx.historyTurns());
         long elapsed = System.currentTimeMillis() - start;
         QaRecord record = persist(userId, sessionId, question, answer, ctx.sources(), elapsed);
+        quotaService.record(userId, QuotaService.CHAT);
 
         return new AskResp(record.getRecordId(), answer, ctx.sources(), elapsed);
     }
@@ -103,6 +108,8 @@ public class ChatService {
      */
     public Flux<String> askStream(Long userId, String sessionId, String question,
                                   List<Long> courseIds, AssistantVO assistant) {
+        // 配额检查放在方法进入时(请求线程,UserContext 可用);记账在流结束落库后
+        quotaService.checkQuota(userId, QuotaService.CHAT);
         long start = System.currentTimeMillis();
         StringBuilder answer = new StringBuilder();
         return Flux.defer(() -> {
@@ -126,6 +133,7 @@ public class ChatService {
                 saveHistory(userId, sessionId, question, full, ctx.historyTurns());
                 long elapsed = System.currentTimeMillis() - start;
                 QaRecord record = persist(userId, sessionId, question, full, ctx.sources(), elapsed);
+                quotaService.record(userId, QuotaService.CHAT);
                 return event("done", objectMapper.writeValueAsString(
                         Map.of("recordId", record.getRecordId() == null ? 0L : record.getRecordId(),
                                 "elapsedMs", elapsed)));

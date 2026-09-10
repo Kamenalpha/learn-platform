@@ -104,6 +104,6 @@ class ChatServiceTest {
         return new ChatService(mock(ChatModel.class), mock(KbConfigService.class),
                 mock(RetrievalService.class), mock(StringRedisTemplate.class),
                 mock(QaRecordMapper.class), chunkMapper, new ObjectMapper(),
-                mock(CourseAccessService.class));
+                mock(CourseAccessService.class), mock(com.rag.edu.service.QuotaService.class));
     }
 }

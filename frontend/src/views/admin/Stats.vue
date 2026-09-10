@@ -26,6 +26,42 @@
     </el-row>
 
     <el-card shadow="never" style="margin-top: 16px">
+      <template #header>AI 用量与配额(当月:{{ aiUsage?.month || '—' }},管理员不受限)</template>
+      <el-row :gutter="16">
+        <el-col :span="6">
+          <div class="usage-title">各动作汇总</div>
+          <el-table :data="usageActions" size="small">
+            <el-table-column label="动作" prop="name" />
+            <el-table-column label="次数" prop="total" width="80" />
+          </el-table>
+        </el-col>
+        <el-col :span="7">
+          <div class="usage-title">用量 Top 用户</div>
+          <el-table :data="usageUsers" size="small">
+            <el-table-column label="用户" prop="username">
+              <template #default="{ row }">{{ row.username || ('用户 ' + row.userId) }}</template>
+            </el-table-column>
+            <el-table-column label="次数" prop="total" width="80" />
+          </el-table>
+        </el-col>
+        <el-col :span="11">
+          <div class="usage-title">最近记账明细</div>
+          <el-table :data="usageRecent" size="small" max-height="260">
+            <el-table-column label="用户" prop="userId" width="70" />
+            <el-table-column label="动作" width="90">
+              <template #default="{ row }">{{ actionName(row.actionType) }}</template>
+            </el-table-column>
+            <el-table-column label="次数" prop="useCount" width="60" />
+            <el-table-column label="月份" prop="month" width="70" />
+            <el-table-column label="更新时间" width="160">
+              <template #default="{ row }">{{ formatTime(row.createTime) }}</template>
+            </el-table-column>
+          </el-table>
+        </el-col>
+      </el-row>
+    </el-card>
+
+    <el-card shadow="never" style="margin-top: 16px">
       <template #header>问答日志</template>
       <el-table :data="logs" v-loading="logLoading" stripe size="small">
         <el-table-column prop="recordId" label="ID" width="70" />
@@ -112,6 +148,27 @@ const loadLogs = async () => {
   }
 }
 
+const aiUsage = ref(null)
+const usageActions = ref([])
+const usageUsers = ref([])
+const usageRecent = ref([])
+
+const actionName = (t) => ({
+  chat: '智能问答',
+  generate: '出题',
+  grade: 'AI 评分',
+  project: '项目辅导',
+  graph: '知识图谱'
+}[t] || t || '—')
+
+const loadAiUsage = async () => {
+  const data = await api.statsAiUsage()
+  aiUsage.value = data
+  usageActions.value = (data.byAction || []).map((r) => ({ name: actionName(r.actionType), total: r.total }))
+  usageUsers.value = data.topUsers || []
+  usageRecent.value = data.recent || []
+}
+
 const formatTime = (t) => (t ? String(t).replace('T', ' ').slice(0, 19) : '')
 
 const onResize = () => {
@@ -127,6 +184,7 @@ onMounted(async () => {
   loadTrend()
   loadBar()
   loadLogs()
+  loadAiUsage()
 })
 
 onBeforeUnmount(() => {
@@ -155,5 +213,11 @@ onBeforeUnmount(() => {
 
 .chart-box {
   height: 280px;
+}
+
+.usage-title {
+  font-size: 13px;
+  color: var(--mist);
+  margin-bottom: 8px;
 }
 </style>

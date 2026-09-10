@@ -4,6 +4,7 @@ import com.rag.edu.common.BizException;
 import com.rag.edu.dto.KbDtos.KbConfig;
 import com.rag.edu.entity.Course;
 import com.rag.edu.service.CourseAccessService;
+import com.rag.edu.service.QuotaService;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.document.Document;
@@ -28,15 +29,18 @@ public class ExamService {
     private final CourseAccessService courseAccessService;
     private final RetrievalService retrievalService;
     private final ChatClient chatClient;
+    private final QuotaService quotaService;
 
     public ExamService(CourseAccessService courseAccessService, RetrievalService retrievalService,
-                       ChatModel chatModel) {
+                       ChatModel chatModel, QuotaService quotaService) {
         this.courseAccessService = courseAccessService;
         this.retrievalService = retrievalService;
         this.chatClient = ChatClient.builder(chatModel).build();
+        this.quotaService = quotaService;
     }
 
     public String generate(Long courseId, Long userId, String chapter) {
+        quotaService.checkQuota(userId, QuotaService.GENERATE);
         Course course = courseAccessService.requireManagedCourse(courseId, userId);
         String query = (chapter == null || chapter.isBlank())
                 ? course.getCourseName() + " 核心知识点 考点"
@@ -59,7 +63,9 @@ public class ExamService {
                 + (chapter == null || chapter.isBlank() ? "(全课程)" : "章节: " + chapter)
                 + "\n\n【课程资料】\n" + context;
         try {
-            return chatClient.prompt().system(PROMPT).user(user).call().content();
+            String content = chatClient.prompt().system(PROMPT).user(user).call().content();
+            quotaService.record(userId, QuotaService.GENERATE);
+            return content;
         } catch (Exception e) {
             throw new BizException("大模型调用失败: " + e.getMessage());
         }

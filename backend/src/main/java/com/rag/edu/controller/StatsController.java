@@ -40,4 +40,10 @@ public class StatsController {
                                               @RequestParam(defaultValue = "10") long size) {
         return Result.ok(statsService.qaLogs(page, size));
     }
+
+    /** AI 用量(当月汇总/Top用户/最近明细),配额执行情况 */
+    @GetMapping("/ai-usage")
+    public Result<Map<String, Object>> aiUsage() {
+        return Result.ok(statsService.aiUsage());
+    }
 }

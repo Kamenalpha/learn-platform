@@ -73,6 +73,15 @@ rag:
   jwt-secret: rag-edu-graduation-project-jwt-secret-please-change-in-prod
   jwt-expire-hours: 72
 
+# 成本配额:每用户每月 AI 调用次数上限(0=不限;管理员不受限;QUOTA_ENABLED=false 整体关闭)
+quota:
+  enabled: ${QUOTA_ENABLED:true}
+  chat-limit: ${QUOTA_CHAT_LIMIT:200}        # 智能问答
+  generate-limit: ${QUOTA_GENERATE_LIMIT:30} # 出题(正式考试/练习/变式)
+  grade-limit: ${QUOTA_GRADE_LIMIT:200}      # 主观题 AI 评分
+  project-limit: ${QUOTA_PROJECT_LIMIT:10}   # 项目辅导 AI 拆解
+  graph-limit: ${QUOTA_GRAPH_LIMIT:30}       # 知识图谱生成
+
 logging:
   level:
     org.springframework.ai: INFO

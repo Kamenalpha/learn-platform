@@ -47,13 +47,14 @@ public class ExamPracticeService {
     private final KnowledgePointMapper knowledgePointMapper;
     private final StudyLogService studyLogService;
     private final CourseAccessService courseAccessService;
+    private final QuotaService quotaService;
 
     public ExamPracticeService(ChatModel chatModel, ObjectMapper objectMapper, ExamSourceMapper sourceMapper,
                                QuestionMapper questionMapper, PaperMapper paperMapper,
                                PaperQuestionMapper paperQuestionMapper, ExamRecordMapper examRecordMapper,
                                ExamAnswerMapper examAnswerMapper, MistakeMapper mistakeMapper,
                                KnowledgePointMapper knowledgePointMapper, StudyLogService studyLogService,
-                               CourseAccessService courseAccessService) {
+                               CourseAccessService courseAccessService, QuotaService quotaService) {
         this.chatClient = ChatClient.builder(chatModel).build();
         this.objectMapper = objectMapper;
         this.sourceMapper = sourceMapper;
@@ -66,10 +67,12 @@ public class ExamPracticeService {
         this.knowledgePointMapper = knowledgePointMapper;
         this.studyLogService = studyLogService;
         this.courseAccessService = courseAccessService;
+        this.quotaService = quotaService;
     }
 
     @Transactional
     public Map<String, Object> generate(Long userId, GenerateReq req) {
+        quotaService.checkQuota(userId, QuotaService.GENERATE);
         int sourceType = req.sourceType() == null ? 0 : req.sourceType();
         if (sourceType != 1) {
             courseAccessService.requireManagedCourse(req.courseId(), userId);
@@ -106,6 +109,7 @@ public class ExamPracticeService {
         if (items == null || items.isEmpty()) {
             throw new BizException("生成题目为空,请重试");
         }
+        quotaService.record(userId, QuotaService.GENERATE);
 
         List<Question> questions = new ArrayList<>();
         for (GeneratedQuestion item : items) {
@@ -240,6 +244,7 @@ public class ExamPracticeService {
 
         List<Map<String, Object>> itemResults = new ArrayList<>();
         double total = 0, got = 0;
+        boolean gradeQuotaChecked = false;
         for (PaperQuestion pq : pqs) {
             Question q = questionMapper.selectById(pq.getQuestionId());
             if (q == null) {
@@ -263,7 +268,11 @@ public class ExamPracticeService {
                 }
                 itemResults.add(map("questionId", q.getQuestionId(), "correct", correct, "score", correct ? score : 0));
             } else {
-                Map<String, Object> grade = aiGrade(q, userAnswer);
+                if (!gradeQuotaChecked) {
+                    quotaService.checkQuota(userId, QuotaService.GRADE);
+                    gradeQuotaChecked = true;
+                }
+                Map<String, Object> grade = aiGrade(userId, q, userAnswer);
                 Object s = grade.get("score");
                 double sub = s == null ? 0 : Double.parseDouble(s.toString());
                 ea.setAiScore(sub);
@@ -308,13 +317,14 @@ public class ExamPracticeService {
                 .eq(PaperQuestion::getPaperId, paperId).orderByAsc(PaperQuestion::getOrderNum));
     }
 
-    private Map<String, Object> aiGrade(Question q, String userAnswer) {
+    private Map<String, Object> aiGrade(Long userId, Question q, String userAnswer) {
         String prompt = """
                 你是阅卷老师。请给下面学生的作答打分(0-100,含小数),并给一句评语。
                 题目:%s  参考答案:%s  学生答案:%s
                 """.formatted(q.getStem(), q.getAnswer(), userAnswer == null ? "" : userAnswer);
         try {
             AiGradeResult result = chatClient.prompt().user(prompt).call().entity(AiGradeResult.class);
+            quotaService.record(userId, QuotaService.GRADE);
             return map("score", result == null ? 0 : result.score(),
                     "comment", result == null ? "" : result.comment());
         } catch (Exception e) {

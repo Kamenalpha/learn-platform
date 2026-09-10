@@ -179,6 +179,7 @@ export const api = {
   qaTrend: (days) => request.get('/admin/stats/qa-trend', { params: { days } }),
   docsByCourse: () => request.get('/admin/stats/docs-by-course'),
   qaLogs: (page, size) => request.get('/admin/stats/qa-logs', { params: { page, size } }),
+  statsAiUsage: () => request.get('/admin/stats/ai-usage'),
   users: () => request.get('/admin/users'),
   setUserRole: (id, role) => request.put(`/admin/users/${id}/role`, null, { params: { role } }),
   deleteUser: (id) => request.delete(`/admin/users/${id}`),

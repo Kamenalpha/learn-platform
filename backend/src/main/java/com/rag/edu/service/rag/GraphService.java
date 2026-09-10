@@ -10,6 +10,7 @@ import com.rag.edu.dto.KbDtos.GraphNode;
 import com.rag.edu.entity.Course;
 import com.rag.edu.entity.DocChunk;
 import com.rag.edu.service.CourseAccessService;
+import com.rag.edu.service.QuotaService;
 import com.rag.edu.mapper.DocChunkMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -50,14 +51,17 @@ public class GraphService {
     private final ChatClient chatClient;
     private final StringRedisTemplate redis;
     private final ObjectMapper objectMapper;
+    private final QuotaService quotaService;
 
     public GraphService(CourseAccessService courseAccessService, DocChunkMapper chunkMapper,
-                        ChatModel chatModel, StringRedisTemplate redis, ObjectMapper objectMapper) {
+                        ChatModel chatModel, StringRedisTemplate redis, ObjectMapper objectMapper,
+                        QuotaService quotaService) {
         this.courseAccessService = courseAccessService;
         this.chunkMapper = chunkMapper;
         this.chatClient = ChatClient.builder(chatModel).build();
         this.redis = redis;
         this.objectMapper = objectMapper;
+        this.quotaService = quotaService;
     }
 
     public GraphData build(Long courseId, Long userId, boolean refresh) {
@@ -90,7 +94,11 @@ public class GraphService {
         }
         String raw;
         try {
+            quotaService.checkQuota(userId, QuotaService.GRAPH);
             raw = chatClient.prompt().system(PROMPT).user(material.toString()).call().content();
+            quotaService.record(userId, QuotaService.GRAPH);
+        } catch (BizException e) {
+            throw e;
         } catch (Exception e) {
             throw new BizException("大模型调用失败: " + e.getMessage());
         }

@@ -9,11 +9,14 @@ import com.rag.edu.entity.SysUser;
 import com.rag.edu.mapper.DocChunkMapper;
 import com.rag.edu.mapper.DocResourceMapper;
 import com.rag.edu.mapper.QaRecordMapper;
+import com.rag.edu.mapper.QuotaLogMapper;
 import com.rag.edu.mapper.SysUserMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +32,7 @@ public class StatsService {
     private final DocResourceMapper resourceMapper;
     private final DocChunkMapper chunkMapper;
     private final QaRecordMapper qaRecordMapper;
+    private final QuotaLogMapper quotaLogMapper;
 
     public Map<String, Object> overview() {
         Map<String, Object> data = new LinkedHashMap<>();
@@ -63,6 +67,25 @@ public class StatsService {
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("total", result.getTotal());
         data.put("records", result.getRecords());
+        return data;
+    }
+
+    /** AI 用量看板:当月各动作汇总 + 用量 Top 用户 + 最近记账明细 */
+    public Map<String, Object> aiUsage() {
+        String month = YearMonth.now().format(DateTimeFormatter.ofPattern("yyyyMM"));
+        List<Map<String, Object>> topUsers = quotaLogMapper.topUsersByMonth(month);
+        for (Map<String, Object> row : topUsers) {
+            SysUser u = userMapper.selectById(Long.valueOf(row.get("userId").toString()));
+            if (u != null) {
+                row.put("username", u.getNickname() == null || u.getNickname().isBlank()
+                        ? u.getUsername() : u.getNickname());
+            }
+        }
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("month", month);
+        data.put("byAction", quotaLogMapper.sumByMonth(month));
+        data.put("topUsers", topUsers);
+        data.put("recent", quotaLogMapper.recent(50));
         return data;
     }
 

@@ -41,7 +41,8 @@ class ExamPracticeServiceTest {
     private final ExamPracticeService service = new ExamPracticeService(chatModel, objectMapper,
             mock(ExamSourceMapper.class), questionMapper, paperMapper, paperQuestionMapper,
             examRecordMapper, mock(ExamAnswerMapper.class), mistakeMapper,
-            knowledgePointMapper, mock(StudyLogService.class), mock(CourseAccessService.class));
+            knowledgePointMapper, mock(StudyLogService.class), mock(CourseAccessService.class),
+            mock(QuotaService.class));
 
     @Test
     void optionsAreStoredAsJsonArrayAndNullForNonChoice() {

@@ -115,7 +115,7 @@ class CourseAccessServiceTest {
                 mock(DocChunkMapper.class), access, new RagProperties(), new ObjectMapper());
         ChatService chatService = new ChatService(mock(ChatModel.class), configService, retrievalService,
                 mock(StringRedisTemplate.class), mock(QaRecordMapper.class), mock(DocChunkMapper.class),
-                new ObjectMapper(), access);
+                new ObjectMapper(), access, mock(QuotaService.class));
 
         BizException denied = assertThrows(BizException.class,
                 () -> chatService.ask(1L, "session", "question", List.of(10L), null));

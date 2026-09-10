@@ -24,14 +24,18 @@ public class ProjectService {
     private final ChatClient chatClient;
     private final ObjectMapper objectMapper;
     private final ProjectCaseMapper projectCaseMapper;
+    private final QuotaService quotaService;
 
-    public ProjectService(ChatModel chatModel, ObjectMapper objectMapper, ProjectCaseMapper projectCaseMapper) {
+    public ProjectService(ChatModel chatModel, ObjectMapper objectMapper, ProjectCaseMapper projectCaseMapper,
+                          QuotaService quotaService) {
         this.chatClient = ChatClient.builder(chatModel).build();
         this.objectMapper = objectMapper;
         this.projectCaseMapper = projectCaseMapper;
+        this.quotaService = quotaService;
     }
 
     public ProjectCase create(Long userId, CreateReq req) {
+        quotaService.checkQuota(userId, QuotaService.PROJECT);
         String prompt = """
                 你是课程设计项目导师。请根据下面的项目题目与需求,给出完整辅导方案,严格返回 JSON(不要其它文字):
                 {"techSolution":"技术方案说明","taskList":["任务1","任务2",...],"stagePlan":["阶段1:...","阶段2:...",...],"docContent":"项目报告/文档大纲(含背景/需求/设计/实现/测试/总结)"}
@@ -45,6 +49,7 @@ public class ProjectService {
         pc.setRequirement(req.requirement());
         try {
             String raw = chatClient.prompt().user(prompt).call().content();
+            quotaService.record(userId, QuotaService.PROJECT);
             JsonNode node = objectMapper.readTree(extractJson(raw));
             pc.setTechSolution(node.path("techSolution").asText(""));
             pc.setTaskList(node.path("taskList").toString());
