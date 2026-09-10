@@ -50,10 +50,32 @@ RAG/
 ├── sql/init_learning.sql   # 新库 learn_platform 建表(34 张表)
 ├── docs/                   # 前端原型设计、用例图等设计文档
 ├── PROJECT_CONVENTIONS.md  # 项目约束(工作流/提交规范)
-└── docker-compose.yml      # MySQL + Redis + Chroma
+├── backend/Dockerfile      # 后端镜像(maven 构建 → JRE 17 运行)
+├── .env.example            # Docker 部署环境变量模板(复制为 .env)
+└── docker-compose.yml      # 一键部署:MySQL + Redis + Chroma + 后端
 ```
 
 ## 四、快速开始
+
+### 方式 A:Docker 一键部署(推荐体验,约 5 分钟)
+> 前置:安装 [Docker Desktop](https://www.docker.com/products/docker-desktop/) 并保持运行。
+
+```bash
+# 1) 准备配置(Windows 用 copy,macOS/Linux 用 cp)
+cp .env.example .env
+#    编辑 .env,填入 LLM_API_KEY 与 EMBED_API_KEY(服务商见下表)
+# 2) 一键构建并启动 MySQL + Redis + Chroma + 后端
+#    MySQL 数据卷为空时会自动按序执行 sql/*.sql 完成建库建表
+docker compose up -d --build
+# 3) 启动前端
+cd frontend && npm install && npm run dev    # http://localhost:5173
+```
+
+- 后端地址 `http://localhost:8080`,首次启动自动创建账号 **admin/admin123(管理员)、student/123456(用户)**。
+- 常用命令:`docker compose logs -f backend` 查看后端日志;`docker compose down` 停止(数据保留在命名卷,删卷需 `docker compose down -v`)。
+- 说明:首次建库会执行全部 `sql/*.sql`,其中旧版 `init.sql` 会多建一个不使用的 `rag_edu` 库,可忽略。
+
+### 方式 B:手动部署(本机开发调试)
 
 ### 0. 准备 API Key(必填)
 | 用途 | 默认服务商 | 环境变量 |
@@ -71,7 +93,7 @@ mysql -u root -p < sql/upgrade_guest_public_news.sql   # 老库升级:补 knowle
 ### 2. 启动依赖
 方式 A(推荐,已内置脚本):`powershell -ExecutionPolicy Bypass -File scripts\start-infra.ps1` 启动 MySQL 服务 + venv 版 Chroma。
 
-方式 B(Docker):`docker compose up -d` 启动 MySQL / Redis / Chroma(需 Docker Desktop)。
+方式 B(Docker):`docker compose up -d mysql redis chroma` 只启动依赖容器(需 Docker Desktop)。
 
 > 依赖清单:
 > - **MySQL**(3306):服务 `mysql8046`,库 `learn_platform`(需先建库)。

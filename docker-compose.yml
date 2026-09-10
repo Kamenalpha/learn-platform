@@ -1,13 +1,16 @@
-# 毕设开发环境依赖:MySQL 8 + Redis 7 + Chroma 向量数据库
-# 使用方式:先安装 Docker Desktop,然后在项目根目录执行 docker compose up -d
+# 一键部署:MySQL 8 + Redis 7 + Chroma + Spring Boot 后端(前端另行 npm run dev 或静态部署)
+# 使用方式:
+#   1. 安装 Docker Desktop,复制 .env.example 为 .env 并填入 API Key
+#   2. 项目根目录执行: docker compose up -d --build
+#   3. 后端就绪后访问 http://localhost:8080(默认账号 admin/admin123、student/123456)
 services:
   mysql:
     image: mysql:8.0
     container_name: rag-mysql
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: root123456
-      MYSQL_DATABASE: rag_edu
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root123456}
+      MYSQL_DATABASE: learn_platform        # 与 init_learning.sql 建库名保持一致
       TZ: Asia/Shanghai
     command:
       - --character-set-server=utf8mb4
@@ -16,7 +19,15 @@ services:
       - "3306:3306"
     volumes:
       - mysql-data:/var/lib/mysql
-      - ./sql:/docker-entrypoint-initdb.d:ro   # 首次启动自动执行 sql/init.sql 建表
+      # 首次启动(空数据卷)按文件名字母序执行 sql/*.sql:
+      # init.sql(旧版遗留,会多建一个不用的 rag_edu 库) → init_learning.sql(learn_platform 34 张表) → upgrade_*.sql(增量)
+      - ./sql:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h127.0.0.1 -uroot -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 30s
 
   redis:
     image: redis:7-alpine
@@ -26,6 +37,11 @@ services:
       - "6379:6379"
     volumes:
       - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
 
   chroma:
     image: ghcr.io/chroma-core/chroma:1.0.0
@@ -38,7 +54,41 @@ services:
     volumes:
       - chroma-data:/data
 
+  backend:
+    build: ./backend
+    container_name: rag-backend
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      chroma:
+        condition: service_started
+    environment:
+      DB_HOST: mysql
+      DB_NAME: learn_platform
+      DB_USER: root
+      DB_PASSWORD: ${DB_PASSWORD:-root123456}
+      REDIS_HOST: redis
+      CHROMA_HOST: http://chroma
+      CHROMA_PORT: 8000
+      LLM_API_KEY: ${LLM_API_KEY:?请先复制 .env.example 为 .env 并填写 LLM_API_KEY}
+      LLM_BASE_URL: ${LLM_BASE_URL:-https://api.deepseek.com}
+      LLM_MODEL: ${LLM_MODEL:-deepseek-chat}
+      EMBED_API_KEY: ${EMBED_API_KEY:?请先复制 .env.example 为 .env 并填写 EMBED_API_KEY}
+      EMBED_BASE_URL: ${EMBED_BASE_URL:-https://api.siliconflow.cn}
+      EMBED_MODEL: ${EMBED_MODEL:-BAAI/bge-small-zh-v1.5}
+      RERANK_API_KEY: ${RERANK_API_KEY:-}
+      OCR_BASE_URL: ${OCR_BASE_URL:-}
+      TZ: Asia/Shanghai
+    ports:
+      - "8080:8080"
+    volumes:
+      - backend-uploads:/app/uploads   # 上传课件持久化(对应 application.yml 的 ./uploads)
+
 volumes:
   mysql-data:
   redis-data:
   chroma-data:
+  backend-uploads:

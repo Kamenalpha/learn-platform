@@ -1,0 +1,6 @@
+target/
+uploads/
+logs/
+*.log
+.git/
+.idea/
