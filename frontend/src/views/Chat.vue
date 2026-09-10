@@ -29,21 +29,27 @@
           <div class="bubble" :class="m.role">
             <div class="pre-wrap">
               <template v-if="m.pending && !m.content">正在检索知识库…</template>
-              <template v-else>{{ m.content }}<span v-if="m.pending" class="cursor-flash">▍</span></template>
+              <template v-else>
+                <template v-for="(seg, k) in splitCitations(m.content, m.references?.length || 0)" :key="k">
+                  <span v-if="seg.type === 'text'">{{ seg.value }}</span>
+                  <el-tag v-else size="small" class="cite-chip" @click="openCitation(i, seg.n)">{{ seg.n }}</el-tag>
+                </template>
+                <span v-if="m.pending" class="cursor-flash">▍</span>
+              </template>
             </div>
             <template v-if="m.role === 'assistant' && m.references?.length">
               <el-divider style="margin: 8px 0" />
               <div style="font-size: 12px; color: var(--mist); margin-bottom: 4px">
-                参考来源(点击查看,共 {{ m.references.length }} 条,耗时 {{ m.elapsedMs }}ms):
+                参考来源(点击跳转原文,共 {{ m.references.length }} 条,耗时 {{ m.elapsedMs }}ms):
               </div>
               <div
                 v-for="(r, j) in m.references"
                 :key="j"
                 class="source-card"
-                @click="showSource(r)"
+                @click="openCitation(i, j + 1)"
               >
                 [{{ j + 1 }}] {{ r.docTitle }}{{ r.page ? ' · 第' + r.page + '页' : '' }}
-                <span v-if="r.score != null">(相似度 {{ r.score.toFixed(3) }})</span>
+                <span v-if="r.score != null">(得分 {{ Number(r.score).toFixed(4) }})</span>
               </div>
             </template>
           </div>
@@ -65,23 +71,15 @@
       </div>
     </div>
 
-    <!-- 引用原文弹窗 -->
-    <el-dialog v-model="sourceVisible" title="引用来源原文" width="560px">
-      <template v-if="currentSource">
-        <p style="color: var(--amber); font-weight: 600">
-          {{ currentSource.docTitle }}{{ currentSource.page ? ' · 第' + currentSource.page + '页' : '' }}
-        </p>
-        <div class="pre-wrap" style="background: var(--surface-2); padding: 12px; border-radius: 6px">
-          {{ currentSource.snippet }}
-        </div>
-      </template>
-    </el-dialog>
+    <!-- 引用来源抽屉:点击回答中的 [n] 或来源卡片打开,支持跳转原文 -->
+    <CitationDrawer v-model="citeVisible" :sources="citeSources" :active-index="citeIndex" />
   </div>
 </template>
 
 <script setup>
 import { nextTick, onMounted, reactive, ref } from 'vue'
-import { ElMessage } from 'element-plus'
+import CitationDrawer from '../components/CitationDrawer.vue'
+import { splitCitations } from '../utils/citations'
 import { api } from '../api'
 
 const sessions = ref([])
@@ -90,8 +88,9 @@ const messages = ref([])
 const input = ref('')
 const asking = ref(false)
 const msgListRef = ref(null)
-const sourceVisible = ref(false)
-const currentSource = ref(null)
+const citeVisible = ref(false)
+const citeSources = ref([])
+const citeIndex = ref(0)
 
 const sampleQuestions = [
   '什么是进程?进程和程序有什么区别?',
@@ -182,9 +181,13 @@ const send = async () => {
   scrollBottom()
 }
 
-const showSource = (r) => {
-  currentSource.value = r
-  sourceVisible.value = true
+// 打开引用抽屉并定位到第 n 条来源; n 超出范围时夹到有效区间
+const openCitation = (msgIndex, n) => {
+  const refs = messages.value[msgIndex]?.references || []
+  if (!refs.length) return
+  citeSources.value = refs
+  citeIndex.value = Math.min(Math.max(n, 1), refs.length) - 1
+  citeVisible.value = true
 }
 
 const loadSessions = async () => {
@@ -287,6 +290,12 @@ onMounted(() => {
 .cursor-flash {
   animation: blink 1s step-start infinite;
   color: var(--accent, #4a7dff);
+}
+
+.cite-chip {
+  cursor: pointer;
+  margin: 0 2px;
+  vertical-align: baseline;
 }
 
 @keyframes blink {

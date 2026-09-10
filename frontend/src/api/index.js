@@ -54,6 +54,9 @@ export const api = {
   setDocVisibility: (id, visibility) => request.put(`/docs/${id}/visibility`, null, { params: { visibility } }),
   // 带鉴权头拉取源文件(blob),用于预览/下载
   fetchDocFile: (id) => request.get(`/docs/${id}/file`, { responseType: 'blob' }),
+  // 源文件直链:token 走查询参数(AuthInterceptor 支持 ?token=),供浏览器新窗口直接打开;
+  // PDF 可在链接后追加 #page=N 锚点,由浏览器自带阅读器跳页
+  docFileUrl: (id, token) => '/api/docs/' + id + '/file?token=' + encodeURIComponent(token || ''),
 
   // AI 助手
   listAssistants: () => request.get('/assistants'),

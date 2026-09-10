@@ -29,10 +29,15 @@
         <div class="chat-body" ref="bodyRef">
           <div v-for="(m, i) in messages" :key="i" class="msg-row" :class="m.role">
             <div class="bubble">
-              <div class="pre-wrap">{{ m.content }}</div>
+              <div class="pre-wrap">
+                <template v-for="(seg, k) in splitCitations(m.content, m.references?.length || 0)" :key="k">
+                  <span v-if="seg.type === 'text'">{{ seg.value }}</span>
+                  <el-tag v-else size="small" class="cite-chip" @click="openCitation(i, seg.n)">{{ seg.n }}</el-tag>
+                </template>
+              </div>
               <div v-if="m.role === 'assistant' && m.references && m.references.length" class="refs">
                 <el-tag v-for="(r, j) in m.references" :key="j" size="small" type="info" class="ref-tag"
-                        @click="lookup(r)">[{{ j + 1 }}] {{ r.docTitle }}<template v-if="r.page">·第{{ r.page }}页</template></el-tag>
+                        @click="openCitation(i, j + 1)">[{{ j + 1 }}] {{ r.docTitle }}<template v-if="r.page">·第{{ r.page }}页</template></el-tag>
               </div>
             </div>
           </div>
@@ -81,22 +86,17 @@
       </template>
     </el-dialog>
 
-    <!-- 引用详情 -->
-    <el-dialog v-model="refVisible" :title="'引用详情 - ' + (refSelect?.docTitle || '')" width="520px">
-      <div v-if="refSelect" class="ref-body">
-        <p v-if="refSelect.page">页码:第 {{ refSelect.page }} 页</p>
-        <p>相似度:{{ (refSelect.score * 100).toFixed(1) }}%</p>
-        <p class="pre-wrap">{{ refSelect.snippet }}</p>
-        <el-button size="small" @click="viewSourceFile(refSelect)">查看原文件</el-button>
-      </div>
-    </el-dialog>
+    <!-- 引用来源抽屉:点击回答中的 [n] 或引用标签打开,支持跳转原文 -->
+    <CitationDrawer v-model="citeVisible" :sources="citeSources" :active-index="citeIndex" />
   </div>
 </template>
 
 <script setup>
 import { nextTick, onMounted, ref } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import { Plus, Edit } from '@element-plus/icons-vue'
+import CitationDrawer from '../components/CitationDrawer.vue'
+import { splitCitations } from '../utils/citations'
 import { api } from '../api'
 
 const assistants = ref([])
@@ -112,8 +112,10 @@ const manageVisible = ref(false)
 const editing = ref(false)
 const form = ref(defaultForm())
 
-const refVisible = ref(false)
-const refSelect = ref(null)
+// 引用抽屉状态:打开并定位到第 n 条来源
+const citeVisible = ref(false)
+const citeSources = ref([])
+const citeIndex = ref(0)
 
 function defaultForm() {
   return { assistantId: null, name: '', courseIds: [], systemPrompt: '', model: 'deepseek-chat',
@@ -152,19 +154,13 @@ const send = async () => {
   }
 }
 
-const lookup = (r) => {
-  refSelect.value = r
-  refVisible.value = true
-}
-
-const viewSourceFile = async (r) => {
-  try {
-    const res = await api.fetchDocFile(r.docId)
-    const blob = new Blob([res.data])
-    window.open(URL.createObjectURL(blob), '_blank')
-  } catch (e) {
-    ElMessage.error('打开原文件失败')
-  }
+// 打开引用抽屉并定位到第 n 条来源; n 超出范围时夹到有效区间
+const openCitation = (msgIndex, n) => {
+  const refs = messages.value[msgIndex]?.references || []
+  if (!refs.length) return
+  citeSources.value = refs
+  citeIndex.value = Math.min(Math.max(n, 1), refs.length) - 1
+  citeVisible.value = true
 }
 
 const openManage = (a) => {
@@ -339,8 +335,10 @@ onMounted(async () => {
   border-top: 1px solid var(--line);
 }
 
-.ref-body p {
-  margin: 8px 0;
+.cite-chip {
+  cursor: pointer;
+  margin: 0 2px;
+  vertical-align: baseline;
 }
 
 @media (max-width: 768px) {
