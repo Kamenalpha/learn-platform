@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rag.edu.common.BizException;
 import com.rag.edu.dto.QuestionDtos.GeneratedQuestion;
 import com.rag.edu.dto.QuestionDtos.GradeReq;
+import com.rag.edu.entity.ExamAnswer;
 import com.rag.edu.entity.ExamRecord;
 import com.rag.edu.entity.KnowledgePoint;
 import com.rag.edu.entity.Mistake;
@@ -37,12 +38,13 @@ class ExamPracticeServiceTest {
     private final ExamRecordMapper examRecordMapper = mock(ExamRecordMapper.class);
     private final MistakeMapper mistakeMapper = mock(MistakeMapper.class);
     private final KnowledgePointMapper knowledgePointMapper = mock(KnowledgePointMapper.class);
+    private final AiDiagnosisMapper aiDiagnosisMapper = mock(AiDiagnosisMapper.class);
     private final ChatModel chatModel = mock(ChatModel.class);
     private final ExamPracticeService service = new ExamPracticeService(chatModel, objectMapper,
             mock(ExamSourceMapper.class), questionMapper, paperMapper, paperQuestionMapper,
             examRecordMapper, mock(ExamAnswerMapper.class), mistakeMapper,
-            knowledgePointMapper, mock(StudyLogService.class), mock(CourseAccessService.class),
-            mock(QuotaService.class));
+            knowledgePointMapper, aiDiagnosisMapper, mock(StudyLogService.class),
+            mock(CourseAccessService.class), mock(QuotaService.class));
 
     @Test
     void optionsAreStoredAsJsonArrayAndNullForNonChoice() {
@@ -189,6 +191,30 @@ class ExamPracticeServiceTest {
         BizException error = assertThrows(BizException.class, () -> service.generateVariants(1L, 7L));
 
         assertTrue(error.getMessage().startsWith("大模型出题失败"));
+    }
+
+    @Test
+    void aiCommentIsPersistedAsDiagnosisButFailurePlaceholderIsSkipped() {
+        Question q = new Question();
+        q.setQuestionId(3L);
+        q.setKpId(5L);
+        ExamAnswer good = new ExamAnswer();
+        good.setExamAnswerId(11L);
+        good.setAiComment("对二阶求导链式法则理解不足,建议复习复合函数求导。");
+        ExamAnswer failed = new ExamAnswer();
+        failed.setExamAnswerId(12L);
+        failed.setAiComment("AI评分失败,待人工复核");
+
+        service.recordAiDiagnosis(1L, q, good);
+        service.recordAiDiagnosis(1L, q, failed);
+        service.recordAiDiagnosis(1L, q, new ExamAnswer());
+
+        ArgumentCaptor<com.rag.edu.entity.AiDiagnosis> captor =
+                ArgumentCaptor.forClass(com.rag.edu.entity.AiDiagnosis.class);
+        verify(aiDiagnosisMapper, times(1)).insert(captor.capture());
+        assertEquals(5L, captor.getValue().getKpId());
+        assertEquals(11L, captor.getValue().getRefId());
+        assertTrue(captor.getValue().getContent().contains("链式法则"));
     }
 
     private static Paper paper(Long paperId, Long userId, int durationMin) {

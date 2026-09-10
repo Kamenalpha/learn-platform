@@ -24,6 +24,25 @@
       </el-table>
       <el-empty v-if="!overview?.weakPoints?.length" description="暂无错题数据,先去出题模拟中练习" :image-size="60" />
     </div>
+
+    <div class="block">
+      <div class="block-title">AI 诊断</div>
+      <el-alert type="info" :closable="false" show-icon style="margin-bottom: 8px"
+                title="以下观察来自 AI 批改主观题时的评语,帮你定位薄弱点的具体成因。" />
+      <el-table :data="diagnoses" size="small" v-loading="loadingDiagnoses">
+        <el-table-column label="知识点" width="160">
+          <template #default="{ row }">{{ row.kpName || '通用观察' }}</template>
+        </el-table-column>
+        <el-table-column label="AI 观察" min-width="320">
+          <template #default="{ row }">{{ row.content }}</template>
+        </el-table-column>
+        <el-table-column label="时间" width="170">
+          <template #default="{ row }">{{ formatTime(row.createTime) }}</template>
+        </el-table-column>
+      </el-table>
+      <el-empty v-if="!loadingDiagnoses && !diagnoses.length" description="暂无 AI 诊断,完成一次含简答题的练习后生成"
+                :image-size="60" />
+    </div>
   </div>
 </template>
 
@@ -33,6 +52,8 @@ import { api } from '../api'
 
 const overview = ref(null)
 const loading = ref(false)
+const diagnoses = ref([])
+const loadingDiagnoses = ref(false)
 
 const cards = computed(() => {
   const o = overview.value || {}
@@ -55,12 +76,20 @@ const fmtDur = (sec) => {
   return h > 0 ? `${h} 小时 ${m} 分` : `${m} 分钟`
 }
 
+const formatTime = (t) => (t ? String(t).replace('T', ' ').slice(0, 19) : '')
+
 const load = async () => {
   loading.value = true
   try {
     overview.value = await api.analyticsOverview()
   } finally {
     loading.value = false
+  }
+  loadingDiagnoses.value = true
+  try {
+    diagnoses.value = await api.analyticsDiagnoses()
+  } finally {
+    loadingDiagnoses.value = false
   }
 }
 

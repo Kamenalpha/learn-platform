@@ -381,11 +381,25 @@ CREATE TABLE IF NOT EXISTS mistake (
   UNIQUE KEY uk_user_question (user_id, question_id)
 ) ENGINE = InnoDB COMMENT = '错题本表';
 
+-- 27. AI 学情观察表(AI 批改评语沉淀,画像页"AI 诊断"数据源;问答误解来源二期预留)
+CREATE TABLE IF NOT EXISTS ai_diagnosis (
+  diagnosis_id BIGINT      NOT NULL AUTO_INCREMENT COMMENT '观察ID',
+  user_id      BIGINT      NOT NULL COMMENT '用户ID',
+  kp_id        BIGINT      NULL DEFAULT NULL COMMENT '关联知识点ID(可空)',
+  source_type  TINYINT     NOT NULL DEFAULT 0 COMMENT '来源:0 AI评分评语 1 问答误解(二期预留)',
+  content      TEXT        NOT NULL COMMENT '观察内容(AI评语)',
+  ref_id       BIGINT      NULL DEFAULT NULL COMMENT '来源记录ID(exam_answer_id),唯一键防重',
+  create_time  DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (diagnosis_id),
+  UNIQUE KEY uk_ref (ref_id),
+  KEY idx_user_id (user_id)
+) ENGINE = InnoDB COMMENT = 'AI 学情观察表';
+
 -- ============================================================
 -- 七、课程设计项目辅导
 -- ============================================================
 
--- 27. 项目辅导档案表
+-- 28. 项目辅导档案表
 CREATE TABLE IF NOT EXISTS project_case (
   project_id    BIGINT       NOT NULL AUTO_INCREMENT COMMENT '项目ID',
   user_id       BIGINT       NOT NULL COMMENT '学生ID',
@@ -404,7 +418,7 @@ CREATE TABLE IF NOT EXISTS project_case (
 -- 八、学习画像与统计
 -- ============================================================
 
--- 28. 学习行为日志表(时长/掌握度/弱项数据来源)
+-- 29. 学习行为日志表(时长/掌握度/弱项数据来源)
 CREATE TABLE IF NOT EXISTS study_log (
   log_id        BIGINT       NOT NULL AUTO_INCREMENT COMMENT '日志ID',
   user_id       BIGINT       NOT NULL COMMENT '用户ID',
@@ -416,7 +430,7 @@ CREATE TABLE IF NOT EXISTS study_log (
   KEY idx_user_id (user_id)
 ) ENGINE = InnoDB COMMENT = '学习行为日志表';
 
--- 29. 打卡表(连续天数)
+-- 30. 打卡表(连续天数)
 CREATE TABLE IF NOT EXISTS checkin (
   checkin_id   BIGINT   NOT NULL AUTO_INCREMENT COMMENT '打卡ID',
   user_id      BIGINT   NOT NULL COMMENT '用户ID',
@@ -431,7 +445,7 @@ CREATE TABLE IF NOT EXISTS checkin (
 -- 九、治理、权限与配额
 -- ============================================================
 
--- 30. 内容审核记录表(社区帖子、公开资源、回答等)
+-- 31. 内容审核记录表(社区帖子、公开资源、回答等)
 CREATE TABLE IF NOT EXISTS review_record (
   review_id   BIGINT       NOT NULL AUTO_INCREMENT COMMENT '审核记录ID',
   target_type TINYINT      NOT NULL COMMENT '目标类型:0帖子 1资源 2回答',
@@ -444,7 +458,7 @@ CREATE TABLE IF NOT EXISTS review_record (
   PRIMARY KEY (review_id)
 ) ENGINE = InnoDB COMMENT = '内容审核记录表';
 
--- 31. 分享链接表(资源/助手/帖子,支持密码与有效期)
+-- 32. 分享链接表(资源/助手/帖子,支持密码与有效期)
 CREATE TABLE IF NOT EXISTS share_link (
   share_id    BIGINT       NOT NULL AUTO_INCREMENT COMMENT '分享ID',
   owner_id    BIGINT       NOT NULL COMMENT '分享人ID',
@@ -458,7 +472,7 @@ CREATE TABLE IF NOT EXISTS share_link (
   UNIQUE KEY uk_token (token)
 ) ENGINE = InnoDB COMMENT = '分享链接表';
 
--- 32. 配额/用量记录表(单用户月度额度与限流)
+-- 33. 配额/用量记录表(单用户月度额度与限流)
 CREATE TABLE IF NOT EXISTS quota_log (
   quota_id    BIGINT      NOT NULL AUTO_INCREMENT COMMENT '配额日志ID',
   user_id     BIGINT      NOT NULL COMMENT '用户ID',
@@ -480,7 +494,7 @@ INSERT INTO subject (subject_name, description) VALUES
 --   管理员 admin / admin123
 --   用户   student / 123456
 
--- 33. 知识资讯表:系统每天早上 9:00 自动从公开资讯源(RSS/Atom)抓取,
+-- 34. 知识资讯表:系统每天早上 9:00 自动从公开资讯源(RSS/Atom)抓取,
 --     入库强制标注来源(source_name/source_url),仅作学习导航,
 --     版权:版权归原作者所有,如若侵权可联系删除。
 CREATE TABLE IF NOT EXISTS knowledge_news (

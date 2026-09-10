@@ -45,6 +45,7 @@ public class ExamPracticeService {
     private final ExamAnswerMapper examAnswerMapper;
     private final MistakeMapper mistakeMapper;
     private final KnowledgePointMapper knowledgePointMapper;
+    private final AiDiagnosisMapper aiDiagnosisMapper;
     private final StudyLogService studyLogService;
     private final CourseAccessService courseAccessService;
     private final QuotaService quotaService;
@@ -53,8 +54,9 @@ public class ExamPracticeService {
                                QuestionMapper questionMapper, PaperMapper paperMapper,
                                PaperQuestionMapper paperQuestionMapper, ExamRecordMapper examRecordMapper,
                                ExamAnswerMapper examAnswerMapper, MistakeMapper mistakeMapper,
-                               KnowledgePointMapper knowledgePointMapper, StudyLogService studyLogService,
-                               CourseAccessService courseAccessService, QuotaService quotaService) {
+                               KnowledgePointMapper knowledgePointMapper, AiDiagnosisMapper aiDiagnosisMapper,
+                               StudyLogService studyLogService, CourseAccessService courseAccessService,
+                               QuotaService quotaService) {
         this.chatClient = ChatClient.builder(chatModel).build();
         this.objectMapper = objectMapper;
         this.sourceMapper = sourceMapper;
@@ -65,6 +67,7 @@ public class ExamPracticeService {
         this.examAnswerMapper = examAnswerMapper;
         this.mistakeMapper = mistakeMapper;
         this.knowledgePointMapper = knowledgePointMapper;
+        this.aiDiagnosisMapper = aiDiagnosisMapper;
         this.studyLogService = studyLogService;
         this.courseAccessService = courseAccessService;
         this.quotaService = quotaService;
@@ -284,6 +287,9 @@ public class ExamPracticeService {
                 itemResults.add(map("questionId", q.getQuestionId(), "correct", sub >= 60, "score", score * sub / 100.0));
             }
             examAnswerMapper.insert(ea);
+            if (ea.getAiComment() != null) {
+                recordAiDiagnosis(userId, q, ea);
+            }
         }
         double finalScore = Math.round(got * 10) / 10.0;
         examRecordMapper.updateScore(exam.getExamId(), finalScore);
@@ -302,6 +308,28 @@ public class ExamPracticeService {
 
     private int claimExam(Long examId, Long userId, int status, LocalDateTime endTime) {
         return examRecordMapper.claim(examId, userId, status, endTime);
+    }
+
+    /**
+     * AI 评分后沉淀学情观察(画像页"AI 诊断"数据源)。
+     * ref_id 唯一键防重;AI 评分失败或未挂知识点以外的任何失败只告警,不影响判分主流程。
+     */
+    void recordAiDiagnosis(Long userId, Question q, ExamAnswer ea) {
+        String comment = ea.getAiComment();
+        if (comment == null || comment.isBlank() || comment.startsWith("AI评分失败")) {
+            return;
+        }
+        try {
+            AiDiagnosis d = new AiDiagnosis();
+            d.setUserId(userId);
+            d.setKpId(q.getKpId());
+            d.setSourceType(0);
+            d.setContent(comment.length() > 500 ? comment.substring(0, 500) : comment);
+            d.setRefId(ea.getExamAnswerId());
+            aiDiagnosisMapper.insert(d);
+        } catch (Exception e) {
+            log.warn("AI 学情观察写入失败: {}", e.getMessage());
+        }
     }
 
     private Paper requireOwnedPaper(Long paperId, Long userId) {

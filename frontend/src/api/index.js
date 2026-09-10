@@ -89,6 +89,7 @@ export const api = {
 
   // 学习画像
   analyticsOverview: () => request.get('/analytics/overview'),
+  analyticsDiagnoses: () => request.get('/analytics/diagnoses'),
 
   // 出题模拟
   examGenerate: (data) => request.post('/exam/generate', data, { timeout: 300000 }),

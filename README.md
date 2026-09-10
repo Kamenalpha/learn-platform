@@ -47,7 +47,7 @@ RAG/
 │       ├── service/        # 各模块业务 + rag/(解析/分块/入库/问答/OCR)
 │       ├── entity/ mapper/ dto/
 ├── frontend/               # Vue3 前端(views/ 下为各模块页面)
-├── sql/init_learning.sql   # 新库 learn_platform 建表(33 张表)
+├── sql/init_learning.sql   # 新库 learn_platform 建表(34 张表)
 ├── docs/                   # 前端原型设计、用例图等设计文档
 ├── PROJECT_CONVENTIONS.md  # 项目约束(工作流/提交规范)
 └── docker-compose.yml      # MySQL + Redis + Chroma
@@ -63,7 +63,7 @@ RAG/
 
 ### 1. 建库(MySQL)
 ```bash
-mysql -u root -p < sql/init_learning.sql          # 新库 learn_platform(33 张表)
+mysql -u root -p < sql/init_learning.sql          # 新库 learn_platform(34 张表)
 mysql -u root -p < sql/upgrade_guest_public_news.sql   # 老库升级:补 knowledge_news 表
 ```
 > 本机 MySQL 密码若与默认不同,请设置 `DB_PASSWORD`。
