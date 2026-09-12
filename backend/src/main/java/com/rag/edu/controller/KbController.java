@@ -86,6 +86,12 @@ public class KbController {
         data.put("docTotal", resourceMapper.selectCount(null));
         data.put("docParsed", resourceMapper.selectCount(
                 new LambdaQueryWrapper<DocResource>().eq(DocResource::getParseStatus, 1)));
+        // 重排"开关状态"与"实际生效"分离:rerankEnabled 开但 RERANK_API_KEY 为空时重排安静关闭
+        boolean rerankEnabled = Boolean.TRUE.equals(kbConfigService.get().rerankEnabled());
+        boolean rerankActive = rerankEnabled && props.getRerankApiKey() != null
+                && !props.getRerankApiKey().isBlank();
+        data.put("rerankEnabled", rerankEnabled);
+        data.put("rerankActive", rerankActive);
         return Result.ok(data);
     }
 

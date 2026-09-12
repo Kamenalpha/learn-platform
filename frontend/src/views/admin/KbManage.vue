@@ -20,8 +20,14 @@
           <el-form-item label="重排精排">
             <el-switch v-model="form.rerankEnabled" active-text="开" inactive-text="关" />
             <div class="el-form-item__content" style="margin-left: 120px; line-height: 1.4">
-              <span style="font-size: 12px; color: var(--el-text-color-secondary)">
-                开启后对双路召回结果用 BGE-Reranker 精排(需配置 RERANK_API_KEY,默认复用 EMBED_API_KEY);关闭则仅 RRF 融合</span>
+              <el-tag v-if="status.rerankActive" type="success" size="small">生效中</el-tag>
+              <el-tag v-else-if="form.rerankEnabled" type="warning" size="small">
+                已开启但未生效:RERANK_API_KEY 未配置
+              </el-tag>
+              <div style="font-size: 12px; color: var(--el-text-color-secondary)">
+                开启后对双路召回结果用 BGE-Reranker 精排,关闭则仅 RRF 融合;
+                需在部署环境显式配置 RERANK_API_KEY(可复用与嵌入相同的 Key),未配置时即使开关打开重排也不生效
+              </div>
             </div>
           </el-form-item>
           <el-form-item label="提示词追加">
