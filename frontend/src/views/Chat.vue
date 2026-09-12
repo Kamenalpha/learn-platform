@@ -152,6 +152,8 @@ const send = async () => {
             const d = typeof data === 'string' ? JSON.parse(data) : data
             msg.recordId = d.recordId
             msg.elapsedMs = d.elapsedMs
+            // 拒答(知识库暂无相关内容)时上下文未被采用,撤下先前推送的引用来源
+            if (d.refused) msg.references = []
           } catch (e) {
             // done 数据异常不阻塞收尾
           }
