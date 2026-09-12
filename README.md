@@ -145,7 +145,7 @@ npm run dev    # http://localhost:5173,/api 自动代理到 8080
 | `NEWS_RSS_FEEDS` | (见 application.yml) | 资讯源列表,每项 `来源名\|分类\|RSS地址`,逗号分隔 |
 
 ## 六、RAG 核心链路
-1. 文档摄入解析(PDF/Word/PPT/TXT,扫描件走 OCR,保留页码)。2. 递归字符分块。3. 向量化嵌入。4. 写入 Chroma。5. **混合检索**(Chroma 向量 + MySQL ngram 关键词双路召回)RRF 融合,可选 **BGE-Reranker 重排**(管理端开关,需 `RERANK_API_KEY`,默认复用 `EMBED_API_KEY`)。6. 大模型生成带引用回答。后续统一入 `doc_chunk`/`qa_record`;管理端「检索测试」页可查看各阶段召回明细(先执行 `sql/upgrade_fulltext_index.sql` 建全文索引)。
+1. 文档摄入解析(PDF/Word/PPT/TXT,扫描件走 OCR,保留页码)。2. 递归字符分块。3. 向量化嵌入。4. 写入 Chroma。5. **混合检索**(Chroma 向量 + MySQL ngram 关键词双路召回,**关键词路需先执行 `sql/upgrade_fulltext_index.sql`**,未建索引自动降级为仅向量)RRF 融合,可选 **BGE-Reranker 重排**(管理端开关,需显式配置 `RERANK_API_KEY`,可复用与嵌入相同的 Key;未配置时重排不生效,管理端会显示实际状态)。6. 大模型生成带引用回答。后续统一入 `doc_chunk`/`qa_record`;管理端「检索测试」页可查看各阶段召回明细。
 
 > 该链路不仅用于问答,也支撑"AI 助手限定课程检索"与"出题模拟"(从教材/重点/样卷生成题目)。
 
