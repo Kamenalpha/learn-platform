@@ -64,7 +64,7 @@ rag:
   chunk-overlap: 50          # 相邻块重叠字符数
   embed-batch-size: 16       # 向量嵌入批量大小
   default-top-k: 5           # 默认召回数量
-  default-threshold: 0.5     # 默认相似度阈值
+  default-threshold: 0.4     # 默认相似度阈值(2026-09-11 实测下调:zh嵌入跨语言分数带0.40-0.53,0.5卡线致空召回)
   ocr-base-url: ${OCR_BASE_URL:}          # OCR服务地址(如 http://localhost:9000/ocr),为空关闭OCR
   ocr-max-pages: 30          # OCR 最大识别页数
   rerank-base-url: ${RERANK_BASE_URL:https://api.siliconflow.cn}  # 重排服务(兼容 /v1/rerank)
