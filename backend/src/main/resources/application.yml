@@ -70,7 +70,7 @@ rag:
   rerank-base-url: ${RERANK_BASE_URL:https://api.siliconflow.cn}  # 重排服务(兼容 /v1/rerank)
   rerank-model: ${RERANK_MODEL:BAAI/bge-reranker-v2-m3}           # 重排模型
   rerank-api-key: ${RERANK_API_KEY:}      # 重排 Key,为空则重排关闭(可复用 EMBED_API_KEY)
-  jwt-secret: rag-edu-graduation-project-jwt-secret-please-change-in-prod
+  jwt-secret: ${JWT_SECRET:rag-edu-graduation-project-jwt-secret-please-change-in-prod}  # 对外部署必改:更换后所有已签发 token 失效
   jwt-expire-hours: 72
 
 # 成本配额:每用户每月 AI 调用次数上限(0=不限;管理员不受限;QUOTA_ENABLED=false 整体关闭)

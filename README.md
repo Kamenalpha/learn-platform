@@ -141,6 +141,9 @@ npm run dev    # http://localhost:5173,/api 自动代理到 8080
 | `LLM_BASE_URL` / `LLM_MODEL` | api.deepseek.com / deepseek-chat | 生成模型 |
 | `EMBED_BASE_URL` / `EMBED_MODEL` | api.siliconflow.cn / BAAI/bge-small-zh-v1.5 | 嵌入模型 |
 | `OCR_BASE_URL` | (空) | OCR 服务(PaddleOCR),扫描件解析用 |
+| `RERANK_API_KEY` | (空) | 重排模型 Key,为空则关闭重排(可复用 EMBED_API_KEY) |
+| `JWT_SECRET` | (内置默认值) | JWT 签名密钥,**对外部署必改**(随机字符串 ≥32 字符,如 `openssl rand -base64 32`;更换后所有已登录用户失效) |
+| `QUOTA_ENABLED` / `QUOTA_*_LIMIT` | true / 见 application.yml | 每月每用户 AI 用量配额(0=不限;管理员不受限) |
 | `NEWS_FETCH_CRON` | `0 0 9 * * ?` | 知识资讯定时抓取(默认每天早上 9:00) |
 | `NEWS_RSS_FEEDS` | (见 application.yml) | 资讯源列表,每项 `来源名\|分类\|RSS地址`,逗号分隔 |
 

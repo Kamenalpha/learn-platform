@@ -81,6 +81,16 @@ services:
       EMBED_MODEL: ${EMBED_MODEL:-BAAI/bge-small-zh-v1.5}
       RERANK_API_KEY: ${RERANK_API_KEY:-}
       OCR_BASE_URL: ${OCR_BASE_URL:-}
+      JWT_SECRET: ${JWT_SECRET:-rag-edu-graduation-project-jwt-secret-please-change-in-prod}
+      QUOTA_ENABLED: ${QUOTA_ENABLED:-true}
+      QUOTA_CHAT_LIMIT: ${QUOTA_CHAT_LIMIT:-200}
+      QUOTA_GENERATE_LIMIT: ${QUOTA_GENERATE_LIMIT:-30}
+      QUOTA_GRADE_LIMIT: ${QUOTA_GRADE_LIMIT:-200}
+      QUOTA_PROJECT_LIMIT: ${QUOTA_PROJECT_LIMIT:-10}
+      QUOTA_GRAPH_LIMIT: ${QUOTA_GRAPH_LIMIT:-30}
+      NEWS_FETCH_CRON: ${NEWS_FETCH_CRON:-0 0 9 * * ?}
+      # 默认值兜底须与 application.yml news.rss-feeds 保持一致(空串会导致 Spring 占位符不回退默认源)
+      NEWS_RSS_FEEDS: ${NEWS_RSS_FEEDS:-知乎每日精选|综合|https://www.zhihu.com/rss,Solidot|科技|https://www.solidot.org/index.rss,少数派|数字生活|https://sspai.com/feed,36氪|商业科技|https://36kr.com/feed,阮一峰的网络日志|科技|https://www.ruanyifeng.com/blog/atom.xml}
       TZ: Asia/Shanghai
     ports:
       - "8080:8080"
