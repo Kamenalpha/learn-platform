@@ -290,7 +290,7 @@ public class RetrievalService {
         static VectorRank of(Document d) {
             Map<String, Object> meta = d.getMetadata();
             Long docId = toLong(meta.get("docId"));
-            Integer page = meta.get("page") == null ? null
+            Integer page = meta.get("page") == null || meta.get("page").toString().isBlank() ? null
                     : Integer.valueOf(meta.get("page").toString());
             String vectorId = meta.get("vectorId") == null ? null : meta.get("vectorId").toString();
             String title = meta.get("docTitle") == null ? "" : meta.get("docTitle").toString();

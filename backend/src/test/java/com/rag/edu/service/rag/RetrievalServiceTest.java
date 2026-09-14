@@ -101,6 +101,23 @@ class RetrievalServiceTest {
         assertEquals("向量内容", hits.get(0).getText());
     }
 
+    @Test
+    void vectorHitWithBlankPageMetadataDoesNotCrash() {
+        // TXT 等无页码文档入库时 page 写入空串,检索侧应容忍为 null 而非抛 NumberFormatException
+        when(vectorStore.similaritySearch(any(SearchRequest.class))).thenReturn(List.of(
+                Document.builder().text("无页码分块内容")
+                        .metadata(Map.of("docId", 1L, "docTitle", "教材B", "page", "", "vectorId", "vc"))
+                        .score(0.7).build()));
+        when(chunkMapper.keywordSearch(anyString(), anyList(), anyInt()))
+                .thenThrow(new RuntimeException("MATCH 无全文索引"));
+        when(access.canReadResource(1L, 7L)).thenReturn(true);
+
+        List<Document> hits = service.retrieve("问题", List.of(10L), 7L, CFG);
+
+        assertEquals(1, hits.size());
+        assertEquals("无页码分块内容", hits.get(0).getText());
+    }
+
     private static Map<String, Object> keywordRow(Long resourceId, Long chunkId, String title,
                                                   Integer page, String vectorId, String content, double kwScore) {
         return Map.of(
