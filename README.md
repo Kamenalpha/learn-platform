@@ -85,10 +85,9 @@ cd frontend && npm install && npm run dev    # http://localhost:5173
 
 ### 1. 建库(MySQL)
 ```bash
-mysql -u root -p < sql/init_learning.sql          # 新库 learn_platform(34 张表)
-mysql -u root -p < sql/upgrade_guest_public_news.sql   # 老库升级:补 knowledge_news 表
+mysql -u root -p < sql/init_learning.sql   # 新库 learn_platform(已含资讯正文列与 ngram 全文索引,单脚本即可)
 ```
-> 本机 MySQL 密码若与默认不同,请设置 `DB_PASSWORD`。
+> 本机 MySQL 密码若与默认不同,请设置 `DB_PASSWORD`。老库按需执行 `sql/upgrade_*.sql` 增量升级(均幂等,可重复执行)。
 
 ### 2. 启动依赖
 方式 A(推荐,已内置脚本):`powershell -ExecutionPolicy Bypass -File scripts\start-infra.ps1` 启动 MySQL 服务 + venv 版 Chroma。

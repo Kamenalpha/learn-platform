@@ -130,7 +130,8 @@ CREATE TABLE IF NOT EXISTS doc_chunk (
   vector_id   VARCHAR(64) NULL DEFAULT NULL COMMENT '向量库中对应ID(resourceId-chunkIndex)',
   create_time DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (chunk_id),
-  KEY idx_resource_id (resource_id)
+  KEY idx_resource_id (resource_id),
+  FULLTEXT INDEX ft_doc_chunk_content (content) WITH PARSER ngram  -- 混合检索关键词路(ngram 中文分词)
 ) ENGINE = InnoDB COMMENT = '资料分块表';
 
 -- 10. 用户重点表(用户划定的重点范围,用于出题)
@@ -501,6 +502,7 @@ CREATE TABLE IF NOT EXISTS knowledge_news (
   news_id      BIGINT       NOT NULL AUTO_INCREMENT COMMENT '资讯ID',
   title        VARCHAR(512) NOT NULL COMMENT '标题',
   summary      VARCHAR(1024)          DEFAULT NULL COMMENT '摘要(截断存储,仅作索引导航)',
+  content      LONGTEXT               DEFAULT NULL COMMENT '资讯正文(纯文本,已标注出处)',
   source_name  VARCHAR(128) NOT NULL COMMENT '来源名称(版权标注)',
   source_url   VARCHAR(768) NOT NULL COMMENT '原文链接(唯一,去重)',
   category     VARCHAR(32)  NOT NULL DEFAULT '综合' COMMENT '分类:综合/科技/商业科技/数字生活等',
