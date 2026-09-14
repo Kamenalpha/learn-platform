@@ -31,7 +31,7 @@ public class CommunityService {
     private final PostLikeMapper likeMapper;
 
     public List<Map<String, Object>> feed(Long courseId, Integer type) {
-        return postMapper.listFeed(courseId, type);
+        return postMapper.listFeed(courseId, type, UserContext.userId());
     }
 
     public Map<String, Object> detail(Long postId) {
@@ -53,7 +53,7 @@ public class CommunityService {
         post.setLikeCount(0);
         post.setCommentCount(0);
         post.setIsAi(post.getIsAi() == null ? 0 : post.getIsAi());
-        post.setAuditStatus(1); // 演示:直接通过,管理员后台可审核
+        post.setAuditStatus(0); // 待审核:通过前对他人在 feed 中不可见(本人始终可见自己的帖子)
         postMapper.insert(post);
         return post;
     }

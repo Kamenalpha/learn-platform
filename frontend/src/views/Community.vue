@@ -15,7 +15,13 @@
           <el-tag :type="row.type === 1 ? 'warning' : 'primary'" size="small">{{ row.type === 1 ? '问题' : '帖子' }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column prop="title" label="标题" min-width="220" />
+      <el-table-column label="标题" min-width="220">
+        <template #default="{ row }">
+          {{ row.title }}
+          <el-tag v-if="row.audit_status === 0" size="small" type="warning">待审核</el-tag>
+          <el-tag v-else-if="row.audit_status === 2" size="small" type="danger">未通过</el-tag>
+        </template>
+      </el-table-column>
       <el-table-column prop="author_name" label="作者" width="120" />
       <el-table-column label="互动" width="160">
         <template #default="{ row }">
@@ -133,7 +139,7 @@ const doCreate = async () => {
     return
   }
   await api.createPost(createForm.value)
-  ElMessage.success('已发布')
+  ElMessage.success('已提交,待管理员审核后对他人可见(你可以在列表中看到自己的帖子)')
   createVisible.value = false
   await load()
 }

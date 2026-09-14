@@ -188,5 +188,6 @@ export const api = {
   // 内容审核(管理员):公开申请的通过/驳回
   auditPending: () => request.get('/admin/audit/pending'),
   auditCourse: (id, action) => request.post(`/admin/audit/course/${id}`, null, { params: { action } }),
-  auditResource: (id, action) => request.post(`/admin/audit/resource/${id}`, null, { params: { action } })
+  auditResource: (id, action) => request.post(`/admin/audit/resource/${id}`, null, { params: { action } }),
+  auditPost: (id, action) => request.post(`/admin/audit/post/${id}`, null, { params: { action } })
 }

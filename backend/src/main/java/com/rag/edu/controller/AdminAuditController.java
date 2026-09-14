@@ -5,10 +5,12 @@ import com.rag.edu.common.BizException;
 import com.rag.edu.common.Result;
 import com.rag.edu.entity.Course;
 import com.rag.edu.entity.DocResource;
+import com.rag.edu.entity.Post;
 import com.rag.edu.entity.Subject;
 import com.rag.edu.entity.SysUser;
 import com.rag.edu.mapper.CourseMapper;
 import com.rag.edu.mapper.DocResourceMapper;
+import com.rag.edu.mapper.PostMapper;
 import com.rag.edu.mapper.SubjectMapper;
 import com.rag.edu.mapper.SysUserMapper;
 import lombok.RequiredArgsConstructor;
@@ -40,8 +42,9 @@ public class AdminAuditController {
     private final DocResourceMapper docResourceMapper;
     private final SubjectMapper subjectMapper;
     private final SysUserMapper userMapper;
+    private final PostMapper postMapper;
 
-    /** 待审核 + 已驳回的公开申请(课程与教材两类) */
+    /** 待审核 + 已驳回的公开申请(课程/教材/社区帖三类) */
     @GetMapping("/pending")
     public Result<Map<String, Object>> pending() {
         List<Course> courses = courseMapper.selectList(new LambdaQueryWrapper<Course>()
@@ -52,12 +55,16 @@ public class AdminAuditController {
                 .eq(DocResource::getVisibility, 1)
                 .in(DocResource::getAuditStatus, 0, 2)
                 .orderByDesc(DocResource::getCreateTime));
+        List<Post> posts = postMapper.selectList(new LambdaQueryWrapper<Post>()
+                .in(Post::getAuditStatus, 0, 2)
+                .orderByDesc(Post::getCreateTime));
 
         Map<Long, String> subjectNames = subjectMapper.selectList(null).stream()
                 .collect(Collectors.toMap(Subject::getSubjectId, Subject::getSubjectName, (a, b) -> a));
         Set<Long> userIds = courses.stream().map(Course::getOwnerId).filter(Objects::nonNull)
                 .collect(Collectors.toSet());
         resources.stream().map(DocResource::getUserId).filter(Objects::nonNull).forEach(userIds::add);
+        posts.stream().map(Post::getUserId).filter(Objects::nonNull).forEach(userIds::add);
         Map<Long, String> nicknames = nicknamesOf(userIds);
         Map<Long, String> courseNames = courseNamesOf(resources);
 
@@ -84,6 +91,16 @@ public class AdminAuditController {
             m.put("createTime", r.getCreateTime());
             return m;
         }).collect(Collectors.toList()));
+        data.put("posts", posts.stream().map(p -> {
+            Map<String, Object> m = new HashMap<>();
+            m.put("postId", p.getPostId());
+            m.put("title", p.getTitle());
+            m.put("type", p.getType());
+            m.put("authorName", nicknames.getOrDefault(p.getUserId(), "未知用户"));
+            m.put("auditStatus", p.getAuditStatus());
+            m.put("createTime", p.getCreateTime());
+            return m;
+        }).collect(Collectors.toList()));
         return Result.ok(data);
     }
 
@@ -108,6 +125,18 @@ public class AdminAuditController {
         }
         resource.setAuditStatus(decide(action));
         docResourceMapper.updateById(resource);
+        return Result.ok();
+    }
+
+    /** 社区帖审核决定:action=approve 通过后对他人在 feed 可见 / reject 驳回 */
+    @PostMapping("/post/{postId}")
+    public Result<Void> decidePost(@PathVariable Long postId, @RequestParam String action) {
+        Post post = postMapper.selectById(postId);
+        if (post == null) {
+            throw new BizException(404, "帖子不存在");
+        }
+        post.setAuditStatus(decide(action));
+        postMapper.updateById(post);
         return Result.ok();
     }
 

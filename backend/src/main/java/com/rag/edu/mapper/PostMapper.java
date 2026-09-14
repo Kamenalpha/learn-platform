@@ -10,20 +10,21 @@ import java.util.Map;
 
 public interface PostMapper extends BaseMapper<Post> {
 
-    /** 帖子列表(已审核通过,含发帖人昵称),可按课程/类型过滤 */
+    /** 帖子列表(已审核通过或本人所发(含待审),含发帖人昵称),可按课程/类型过滤 */
     @Select("""
             <script>
             SELECT p.post_id, p.title, p.content, p.type, p.course_id, p.view_count, p.like_count,
-                   p.comment_count, p.is_ai, p.create_time, u.nickname AS author_name
+                   p.comment_count, p.is_ai, p.audit_status, p.create_time, u.nickname AS author_name
             FROM post p LEFT JOIN sys_user u ON u.user_id = p.user_id
-            WHERE p.audit_status = 1
+            WHERE (p.audit_status = 1 <if test="userId != null"> OR p.user_id = #{userId} </if>)
             <if test="courseId != null"> AND p.course_id = #{courseId} </if>
             <if test="type != null"> AND p.type = #{type} </if>
             ORDER BY p.create_time DESC
             LIMIT 100
             </script>
             """)
-    List<Map<String, Object>> listFeed(@Param("courseId") Long courseId, @Param("type") Integer type);
+    List<Map<String, Object>> listFeed(@Param("courseId") Long courseId, @Param("type") Integer type,
+                                       @Param("userId") Long userId);
 
     /** 浏览 +1 */
     @Select("UPDATE post SET view_count = view_count + 1 WHERE post_id = #{postId}")
