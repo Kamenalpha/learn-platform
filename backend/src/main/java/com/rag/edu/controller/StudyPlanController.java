@@ -27,7 +27,7 @@ public class StudyPlanController {
 
     @GetMapping("/{planId}")
     public Result<java.util.Map<String, Object>> detail(@PathVariable Long planId) {
-        return Result.ok(studyPlanService.detail(planId));
+        return Result.ok(studyPlanService.detail(planId, UserContext.userId()));
     }
 
     @PostMapping

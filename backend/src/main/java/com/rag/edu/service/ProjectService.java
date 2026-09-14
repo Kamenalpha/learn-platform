@@ -71,10 +71,13 @@ public class ProjectService {
                 .eq(ProjectCase::getUserId, userId).orderByDesc(ProjectCase::getCreateTime));
     }
 
-    public ProjectCase detail(Long projectId) {
+    public ProjectCase detail(Long projectId, Long userId) {
         ProjectCase pc = projectCaseMapper.selectById(projectId);
         if (pc == null) {
             throw new BizException(404, "项目不存在");
+        }
+        if (!pc.getUserId().equals(userId)) {
+            throw new BizException(403, "无权查看该项目");
         }
         return pc;
     }

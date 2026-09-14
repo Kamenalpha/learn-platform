@@ -28,10 +28,13 @@ public class StudyPlanService {
                 .orderByDesc(StudyPlan::getCreateTime));
     }
 
-    public java.util.Map<String, Object> detail(Long planId) {
+    public java.util.Map<String, Object> detail(Long planId, Long userId) {
         StudyPlan plan = planMapper.selectById(planId);
         if (plan == null) {
             throw new BizException(404, "计划不存在");
+        }
+        if (!plan.getUserId().equals(userId)) {
+            throw new BizException(403, "无权查看该计划");
         }
         List<PlanTask> tasks = taskMapper.selectList(new LambdaQueryWrapper<PlanTask>()
                 .eq(PlanTask::getPlanId, planId).orderByAsc(PlanTask::getPlanDate));

@@ -27,7 +27,7 @@ public class ProjectController {
 
     @GetMapping("/{projectId}")
     public Result<ProjectCase> detail(@PathVariable Long projectId) {
-        return Result.ok(projectService.detail(projectId));
+        return Result.ok(projectService.detail(projectId, UserContext.userId()));
     }
 
     @PostMapping
