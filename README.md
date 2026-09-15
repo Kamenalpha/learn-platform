@@ -19,7 +19,7 @@
 | 生成大模型 | DeepSeek `deepseek-chat` 或通义 `qwen-plus` |
 | 嵌入模型 | SiliconFlow 托管 `BAAI/bge-small-zh-v1.5`(可换 text-embedding-v3) |
 | 前端 | Vue 3 + Vite + Element Plus + Pinia + ECharts |
-| 约束规范 | 见 `PROJECT_CONVENTIONS.md`(修改/提交流程、提交规范) |
+| 约束规范 | 见 `项目规范.md`(修改/提交流程、分支管理、提交规范) |
 
 ## 二、功能模块
 
@@ -49,7 +49,7 @@ RAG/
 ├── frontend/               # Vue3 前端(views/ 下为各模块页面)
 ├── sql/init_learning.sql   # 新库 learn_platform 建表(34 张表)
 ├── docs/                   # 前端原型设计、用例图等设计文档
-├── PROJECT_CONVENTIONS.md  # 项目约束(工作流/提交规范)
+├── 项目规范.md            # 项目约束(工作流/分支管理/提交规范)
 ├── backend/Dockerfile      # 后端镜像(maven 构建 → JRE 17 运行)
 ├── .env.example            # Docker 部署环境变量模板(复制为 .env)
 └── docker-compose.yml      # 一键部署:MySQL + Redis + Chroma + 后端

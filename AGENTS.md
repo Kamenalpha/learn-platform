@@ -13,7 +13,7 @@
 ## 2. 项目事实以仓库文档为准
 
 - 技术栈、启动方式、环境变量：`README.md`
-- 强制工作流（修改前 git status、改后编译验证、Conventional Commits）：`PROJECT_CONVENTIONS.md`
+- 强制工作流（修改前 git status、改后编译验证、Conventional Commits、分支管理）：`项目规范.md`
 - 设计文档：`docs/`、`毕设.md`
 - 知识库与仓库文档冲突时，以仓库文档为准，并提示用户更新知识库。
 
