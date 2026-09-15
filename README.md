@@ -143,7 +143,9 @@ npm run dev    # http://localhost:5174,/api 自动代理到 8080
 | `EMBED_BASE_URL` / `EMBED_MODEL` | api.siliconflow.cn / BAAI/bge-small-zh-v1.5 | 嵌入模型 |
 | `OCR_BASE_URL` | (空) | OCR 服务(PaddleOCR),扫描件解析用 |
 | `RERANK_API_KEY` | (空) | 重排模型 Key,为空则关闭重排(可复用 EMBED_API_KEY) |
-| `JWT_SECRET` | (内置默认值) | JWT 签名密钥,**对外部署必改**(随机字符串 ≥32 字符,如 `openssl rand -base64 32`;更换后所有已登录用户失效) |
+| `JWT_SECRET` | (内置默认值) | JWT 签名密钥,**对外部署必改**(随机字符串 ≥32 字符,如 `openssl rand -base64 32`;更换后所有已登录用户失效);`prod` 下仍为默认值将导致启动失败 |
+| `SPRING_PROFILES_ACTIVE` | `dev` | 运行 profile;本机开发留默认,**对外部署设为 `prod`**(启用 JWT 默认密钥启动拦截、关闭 SQL 打印,见「设计与安全取舍说明」) |
+| `CORS_ALLOWED_ORIGINS` | `http://localhost:5173,http://localhost:5174` | 允许跨域的前端来源(逗号分隔),**对外部署改为可信域名白名单**,勿用 `*` |
 | `QUOTA_ENABLED` / `QUOTA_*_LIMIT` | true / 见 application.yml | 每月每用户 AI 用量配额(0=不限;管理员不受限) |
 | `NEWS_FETCH_CRON` | `0 0 9 * * ?` | 知识资讯定时抓取(默认每天早上 9:00) |
 | `NEWS_RSS_FEEDS` | (见 application.yml) | 资讯源列表,每项 `来源名\|分类\|RSS地址`,逗号分隔 |
@@ -164,7 +166,9 @@ npm run dev    # http://localhost:5174,/api 自动代理到 8080
 - **`?token=` URL 传参**:为 PDF 在线预览(浏览器内建查看器无法携带自定义请求头)保留的认证方式,代价是 token 可能进入访问日志/浏览器历史;仅预览类接口支持,主链路仍用 Header。
 - **主观题 AI 评分失败记 0 分**:评语标注"待人工复核",由教师在管理端处理;避免 AI 异常导致整卷卡死。
 - **Redis 故障时配额放行(fail-open)**:Redis 宕机时用量配额检查放行,优先保障可用性(毕设演示场景);对外正式部署建议收紧为 fail-close。
-- **JWT 密钥默认值**:仓库内置默认值保证本机零配置可跑,**对外部署必须设置 `JWT_SECRET` 环境变量**(见「常用环境变量」),更换后所有已登录用户失效。
+- **JWT 密钥默认值与 prod 启动拦截**:仓库内置默认值保证本机零配置可跑;**`prod` 环境下若 `JWT_SECRET` 仍为默认/空/弱密钥(长度 <32),后端启动即失败(fail-fast)**,强制对外部署先设置强密钥(见「常用环境变量」),更换后所有已登录用户失效。
+- **CORS 来源白名单**:跨域来源由 `CORS_ALLOWED_ORIGINS` 配置(默认仅本机开发地址),不再全开 `*`;对外部署须改为可信前端域名,缩小 `token` 泄露后的被滥用面。
+- **SQL 日志按环境隔离**:`dev` 环境打印 SQL(便于论文截图与本地调试);`prod`/非 dev 环境 MyBatis 默认静默,避免业务数据写入日志。
 - **SQL 建库脚本幂等**:`sql/upgrade_*.sql` 均带 information_schema 守卫可重复执行;新库仅需 `init_learning.sql`(已含资讯正文列与 ngram 全文索引)。
 
 ## 九、后续可扩展(论文展望)

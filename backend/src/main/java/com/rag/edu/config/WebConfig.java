@@ -15,6 +15,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class WebConfig implements WebMvcConfigurer {
 
     private final AuthInterceptor authInterceptor;
+    private final RagProperties ragProperties;
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
@@ -28,8 +29,12 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
+        String origins = ragProperties.getCorsAllowedOrigins();
+        String[] patterns = (origins != null && !origins.isBlank())
+                ? origins.split(",")
+                : new String[]{"http://localhost:5173", "http://localhost:5174"};
         registry.addMapping("/api/**")
-                .allowedOriginPatterns("*")
+                .allowedOriginPatterns(patterns)
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
                 .maxAge(3600);

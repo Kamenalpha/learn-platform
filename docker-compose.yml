@@ -89,6 +89,8 @@ services:
       RERANK_API_KEY: ${RERANK_API_KEY:-}
       OCR_BASE_URL: ${OCR_BASE_URL:-}
       JWT_SECRET: ${JWT_SECRET:-rag-edu-graduation-project-jwt-secret-please-change-in-prod}
+      # 允许跨域的前端来源(逗号分隔);对外部署设为可信域名,勿留默认 *
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:5173,http://localhost:5174}
       QUOTA_ENABLED: ${QUOTA_ENABLED:-true}
       QUOTA_CHAT_LIMIT: ${QUOTA_CHAT_LIMIT:-200}
       QUOTA_GENERATE_LIMIT: ${QUOTA_GENERATE_LIMIT:-30}

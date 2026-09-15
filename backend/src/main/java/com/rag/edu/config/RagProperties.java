@@ -34,6 +34,9 @@ public class RagProperties {
     /** JWT 过期时间(小时) */
     private long jwtExpireHours = 72;
 
+    /** 允许跨域的前端来源(逗号分隔);生产环境须设为可信域名,勿用 * */
+    private String corsAllowedOrigins = "http://localhost:5173,http://localhost:5174";
+
     /** OCR 服务地址(如 PaddleOCR 服务),为空则关闭 OCR,扫描件将无法解析 */
     private String ocrBaseUrl = "";
 
