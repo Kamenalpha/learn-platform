@@ -56,4 +56,36 @@ class AuthInterceptorTest {
 
         assertDoesNotThrow(() -> interceptor.preHandle(request, response, new Object()));
     }
+
+    @Test
+    void tokenQueryParamAcceptedOnDocumentFilePreview() {
+        when(request.getHeader("Authorization")).thenReturn(null);
+        when(request.getRequestURI()).thenReturn("/api/docs/9/file");
+        when(request.getParameter("token")).thenReturn("token");
+        when(jwtUtil.parse("token")).thenReturn(new LoginUser(2L, "user", 0));
+
+        assertDoesNotThrow(() -> interceptor.preHandle(request, response, new Object()));
+    }
+
+    @Test
+    void tokenQueryParamAcceptedOnPublicResourcePreview() {
+        when(request.getHeader("Authorization")).thenReturn(null);
+        when(request.getRequestURI()).thenReturn("/api/public/docs/9/preview");
+        when(request.getParameter("token")).thenReturn("token");
+        when(jwtUtil.parse("token")).thenReturn(new LoginUser(2L, "user", 0));
+
+        assertDoesNotThrow(() -> interceptor.preHandle(request, response, new Object()));
+    }
+
+    @Test
+    void tokenQueryParamIgnoredOnNonPreviewPath() {
+        when(request.getHeader("Authorization")).thenReturn(null);
+        when(request.getRequestURI()).thenReturn("/api/exam/mistakes");
+        when(request.getParameter("token")).thenReturn("token");
+
+        BizException error = assertThrows(BizException.class,
+                () -> interceptor.preHandle(request, response, new Object()));
+
+        assertEquals(401, error.getCode());
+    }
 }
