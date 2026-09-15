@@ -4,6 +4,8 @@ server:
 spring:
   application:
     name: learn-platform
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}   # 默认 dev(本机开发);对外部署设 SPRING_PROFILES_ACTIVE=prod 启用安全校验
 
   mvc:
     async:
@@ -53,7 +55,8 @@ spring:
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl   # 开发期打印SQL,论文截图方便
+    # SQL 日志:开发期(dev profile)在 application-dev.yml 中开启 StdOutImpl 打印便于论文截图;
+    # 生产/非 dev 环境此处不设置,MyBatis 默认静默,避免泄露业务数据(见代码审查报告 3.2)
   global-config:
     banner: false
 
@@ -72,6 +75,8 @@ rag:
   rerank-api-key: ${RERANK_API_KEY:}      # 重排 Key,为空则重排关闭(可复用 EMBED_API_KEY)
   jwt-secret: ${JWT_SECRET:rag-edu-graduation-project-jwt-secret-please-change-in-prod}  # 对外部署必改:更换后所有已签发 token 失效
   jwt-expire-hours: 72
+  # 允许跨域的前端来源(逗号分隔);生产环境须设为可信域名白名单,勿用 *(见代码审查报告 2.2)
+  cors-allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:5174}
 
 # 成本配额:每用户每月 AI 调用次数上限(0=不限;管理员不受限;QUOTA_ENABLED=false 整体关闭)
 quota:

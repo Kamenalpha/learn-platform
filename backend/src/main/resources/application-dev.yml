@@ -1,0 +1,10 @@
+# 开发环境配置(dev profile,默认激活)
+# 保留 SQL 日志打印,便于本地调试与论文截图;生产环境不激活 dev,MyBatis 默认静默。
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
