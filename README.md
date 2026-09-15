@@ -68,12 +68,13 @@ cp .env.example .env
 #    MySQL 数据卷为空时会自动按序执行 sql/*.sql 完成建库建表
 docker compose up -d --build
 # 3) 启动前端
-cd frontend && npm install && npm run dev    # http://localhost:5173
+cd frontend && npm install && npm run dev    # http://localhost:5174
 ```
 
 - 后端地址 `http://localhost:8080`,首次启动自动创建账号 **admin/admin123(管理员)、student/123456(用户)**。
 - 常用命令:`docker compose logs -f backend` 查看后端日志;`docker compose down` 停止(数据保留在命名卷,删卷需 `docker compose down -v`)。
 - 说明:首次建库会执行全部 `sql/*.sql`,其中旧版 `init.sql` 会多建一个不使用的 `rag_edu` 库,可忽略。
+- **使用本机嵌入服务(localhost:9100)的用户注意**:容器内 `localhost` 指容器自身,需在 `.env` 中设置 `EMBED_BASE_URL=http://host.docker.internal:9100` 并先在宿主机启动该服务(`.venv/Scripts/python.exe scripts/embed_server.py`);使用云端 SiliconFlow 嵌入则无需此设置。
 
 ### 方式 B:手动部署(本机开发调试)
 
@@ -116,7 +117,7 @@ mvn spring-boot:run
 ```bash
 cd frontend
 npm install
-npm run dev    # http://localhost:5173,/api 自动代理到 8080
+npm run dev    # http://localhost:5174,/api 自动代理到 8080
 ```
 > 无后端时可用 `npm run dev:mock` 走内置 mock 数据预览页面(演示/截图)。
 
@@ -127,7 +128,8 @@ npm run dev    # http://localhost:5173,/api 自动代理到 8080
 4. 「学习计划」建计划 + 任务,完成打卡。
 5. 「出题模拟」选出处生成题目 → 模拟考试 → 查看 AI 评分与解析/错题本。
 6. 「项目辅导」输入项目题目 → 查看 AI 拆解方案。
-7. 管理端:数据看板、内容审核、RAG 检索参数。
+7. 「社区」发帖(发帖后进入待审核,本人可见、他人不可见)→ 切换 admin 账号在「内容审核 → 社区帖子」通过 → 切回普通账号确认帖子对他可见。
+8. 管理端:数据看板、内容审核(课程/教材/社区帖)、RAG 检索参数。
 
 ## 五、常用环境变量
 
@@ -147,7 +149,7 @@ npm run dev    # http://localhost:5173,/api 自动代理到 8080
 | `NEWS_RSS_FEEDS` | (见 application.yml) | 资讯源列表,每项 `来源名\|分类\|RSS地址`,逗号分隔 |
 
 ## 六、RAG 核心链路
-1. 文档摄入解析(PDF/Word/PPT/TXT,扫描件走 OCR,保留页码)。2. 递归字符分块。3. 向量化嵌入。4. 写入 Chroma。5. **混合检索**(Chroma 向量 + MySQL ngram 关键词双路召回,**关键词路需先执行 `sql/upgrade_fulltext_index.sql`**,未建索引自动降级为仅向量)RRF 融合,可选 **BGE-Reranker 重排**(管理端开关,需显式配置 `RERANK_API_KEY`,可复用与嵌入相同的 Key;未配置时重排不生效,管理端会显示实际状态)。6. 大模型生成带引用回答。后续统一入 `doc_chunk`/`qa_record`;管理端「检索测试」页可查看各阶段召回明细。
+1. 文档摄入解析(PDF/Word/PPT/TXT,扫描件走 OCR,保留页码)。2. 递归字符分块。3. 向量化嵌入。4. 写入 Chroma。5. **混合检索**(Chroma 向量 + MySQL ngram 关键词双路召回,**关键词路依赖 doc_chunk 全文索引:新库 `init_learning.sql` 已建,老库需执行 `sql/upgrade_fulltext_index.sql`**,未建索引自动降级为仅向量)RRF 融合,可选 **BGE-Reranker 重排**(管理端开关,需显式配置 `RERANK_API_KEY`,可复用与嵌入相同的 Key;未配置时重排不生效,管理端会显示实际状态)。6. 大模型生成带引用回答。后续统一入 `doc_chunk`/`qa_record`;管理端「检索测试」页可查看各阶段召回明细。
 
 > 该链路不仅用于问答,也支撑"AI 助手限定课程检索"与"出题模拟"(从教材/重点/样卷生成题目)。
 
@@ -157,5 +159,13 @@ npm run dev    # http://localhost:5173,/api 自动代理到 8080
 - **扫描件解析为空** → 需配置 `OCR_BASE_URL`(PaddleOCR 服务);不配则 OCR 关闭。
 - **登录不上** → 先确认后端启动、`learn_platform` 已建库、`DB_PASSWORD` 正确。
 
-## 八、后续可扩展(论文展望)
+## 八、设计与安全取舍说明(有意为之,非缺陷)
+- **未登录可读部分公开内容**:`/api/public/**` 提供公开课程/教材的有限试读(8 块,不含原文件下载),登录后解锁个性化知识库等完整功能——公开试读属于产品定位,非越权。
+- **`?token=` URL 传参**:为 PDF 在线预览(浏览器内建查看器无法携带自定义请求头)保留的认证方式,代价是 token 可能进入访问日志/浏览器历史;仅预览类接口支持,主链路仍用 Header。
+- **主观题 AI 评分失败记 0 分**:评语标注"待人工复核",由教师在管理端处理;避免 AI 异常导致整卷卡死。
+- **Redis 故障时配额放行(fail-open)**:Redis 宕机时用量配额检查放行,优先保障可用性(毕设演示场景);对外正式部署建议收紧为 fail-close。
+- **JWT 密钥默认值**:仓库内置默认值保证本机零配置可跑,**对外部署必须设置 `JWT_SECRET` 环境变量**(见「常用环境变量」),更换后所有已登录用户失效。
+- **SQL 建库脚本幂等**:`sql/upgrade_*.sql` 均带 information_schema 守卫可重复执行;新库仅需 `init_learning.sql`(已含资讯正文列与 ngram 全文索引)。
+
+## 九、后续可扩展(论文展望)
 移动端 Vant 组件强化、多模态(图片/视频)检索、语音提问、引用点击跳转 PDF 原文高亮(PDF.js 二期)。
