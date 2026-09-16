@@ -40,6 +40,12 @@ __pycache__/
 frontend/.vite/
 
 # 本地工具(便携版 Redis 等)
-
-# 本地工具(便携版 Redis 等)
 tools/
+
+# 不入库：WorkBuddy 工具数据 / OCR 评测产物（含版权教材文本，隐私风险）
+.workbuddy/
+.ocr-review/
+
+# 不入库：内部发布质量评估（含 P0 漏洞清单与加固历史，公开会暴露攻击面）
+RAG发布质量评估报告-20260914.md
+RAG发布质量优化方案-20260914.md
