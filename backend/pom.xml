@@ -19,6 +19,9 @@
 
     <properties>
         <java.version>17</java.version>
+        <!-- 源码/报告统一 UTF-8:缺失时 GBK 环境(如中文 Windows)会把 UTF-8 中文读坏,文本块字符串直接编译失败 -->
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <spring-ai.version>1.1.8</spring-ai.version>
         <mybatis-plus.version>3.5.7</mybatis-plus.version>
         <poi.version>5.2.5</poi.version>
