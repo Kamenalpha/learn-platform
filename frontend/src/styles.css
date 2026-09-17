@@ -5,39 +5,39 @@
    当前选中与状态指示,不作装饰。
    ============================================================ */
 :root {
-  /* —— 纸与墨 —— */
-  --paper: #1c2534;        /* 主文字(墨蓝黑) — 沿用旧 token 名,语义=主要文字 */
-  --ink: #1c2534;          /* 墨色本体 */
-  --ink-2: #46526a;        /* 次级文字 */
-  --ink-3: #6e7a94;        /* 辅助文字 */
-  --mist: #6e7a94;         /* 次级文字(沿用旧 token 名) */
-  --ink-4: #a6aec2;        /* 占位/禁用文字 */
+  /* —— 纸与墨(淡雅·青黛) —— */
+  --paper: #2c3a3a;        /* 主文字:柔墨青 */
+  --ink: #2c3a3a;          /* 墨色本体 */
+  --ink-2: #51636a;        /* 次级文字 */
+  --ink-3: #7a8b8f;        /* 辅助文字 */
+  --mist: #7a8b8f;         /* 次级文字(沿用旧 token 名) */
+  --ink-4: #aab6b8;        /* 占位/禁用文字 */
 
-  /* —— 纸面 —— */
-  --content-bg: #f6f5f0;   /* 页面底:暖纸白 */
+  /* —— 纸面(月白/宣纸) —— */
+  --content-bg: #f6f7f4;   /* 页面底:浅月白 */
   --surface: #ffffff;      /* 卡片/面板 */
-  --surface-2: #f1f0ea;    /* 次级面板:侧栏/工具条/表头 */
-  --surface-3: #e9e8df;    /* 更深一级填充 */
-  --line: #e2e0d5;         /* 发丝线 */
-  --line-strong: #cfccbd;
+  --surface-2: #eef1ef;    /* 次级面板:侧栏/工具条/表头 */
+  --surface-3: #e4eae7;    /* 更深一级填充 */
+  --line: #e4e9e6;         /* 发丝线 */
+  --line-strong: #d2dcd7;
 
-  /* —— 靛青(唯一强调) —— */
-  --accent: #2f4fd0;
-  --accent-strong: #2440ad;
-  --accent-wash: #eef1fc;  /* 强调底色 */
-  --accent-wash-2: #dfe6fa;
-  --accent-line: #b9c5f2;
+  /* —— 青黛(唯一强调,低饱和松绿) —— */
+  --accent: #4f8a86;
+  --accent-strong: #3c6f6b;
+  --accent-wash: #e9f1ef;  /* 强调底色 */
+  --accent-wash-2: #d6e7e3;
+  --accent-line: #adcbc6;
 
-  /* —— 语义色(状态指示) —— */
-  --cinnabar: #c04b39;     /* 朱砂:错误/危险 */
-  --cinnabar-wash: #fbeeea;
-  --jade: #23795a;         /* 成功 */
-  --jade-wash: #e8f4ee;
-  --gold: #96660f;         /* 警告文字(纸面上可读的琥珀) */
-  --gold-wash: #faf2df;
+  /* —— 语义色(柔和状态色) —— */
+  --cinnabar: #bf6f5e;     /* 柔赤陶:错误/危险 */
+  --cinnabar-wash: #f7ece8;
+  --jade: #4d8a6b;         /* 成功 松绿 */
+  --jade-wash: #e8f2ec;
+  --gold: #a8853f;         /* 警告文字(纸面上可读的琥珀) */
+  --gold-wash: #f6efe1;
 
-  /* —— 品牌印章(唯一允许的第二色,仅品牌记号) —— */
-  --seal: #c04b39;
+  /* —— 品牌印章(暖赭石点缀,唯一第二色,仅品牌记号) —— */
+  --seal: #b5836a;
 
   /* —— 层级 —— */
   --shadow-card: 0 1px 2px rgba(28, 37, 52, 0.04), 0 4px 16px rgba(28, 37, 52, 0.06);
@@ -45,19 +45,19 @@
   --radius-ctl: 8px;
   --radius-card: 12px;
 
-  /* —— Element Plus 主题覆盖(纸面浅色) —— */
-  --el-color-primary: #2f4fd0;
-  --el-color-primary-light-3: #5a74da;
-  --el-color-primary-light-5: #8598e4;
-  --el-color-primary-light-7: #b1bdef;
-  --el-color-primary-light-8: #c8d1f4;
-  --el-color-primary-light-9: #eef1fc;
-  --el-color-primary-dark-2: #2440ad;
-  --el-color-success: #23795a;
-  --el-color-warning: #b07a14;
-  --el-color-danger: #c04b39;
-  --el-color-error: #c04b39;
-  --el-color-info: #6e7a94;
+  /* —— Element Plus 主题覆盖(淡雅·青黛) —— */
+  --el-color-primary: #4f8a86;
+  --el-color-primary-light-3: #84adaa;
+  --el-color-primary-light-5: #a7c4c0;
+  --el-color-primary-light-7: #c9dbda;
+  --el-color-primary-light-8: #dce8e7;
+  --el-color-primary-light-9: #edf3f3;
+  --el-color-primary-dark-2: #3f6e6b;
+  --el-color-success: #4d8a6b;
+  --el-color-warning: #b0873f;
+  --el-color-danger: #bf6f5e;
+  --el-color-error: #bf6f5e;
+  --el-color-info: #7a8b8f;
 
   --el-bg-color: #ffffff;
   --el-bg-color-page: #f6f5f0;

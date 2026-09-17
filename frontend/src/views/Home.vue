@@ -52,6 +52,45 @@
         </div>
       </section>
 
+      <!-- 平台特点:自动轮换展示 -->
+      <section class="showcase">
+        <div class="section-head">
+          <h2>把"学—练—测—交流—做项目"串成一条链路</h2>
+          <p>以 RAG 为核心能力，平台围绕学习者真实需求，提供以下关键特性。</p>
+        </div>
+
+        <el-carousel
+          class="feature-carousel"
+          :interval="4500"
+          height="320px"
+          arrow="always"
+          indicator-position="outside"
+          trigger="click"
+          aria-label="平台特点介绍"
+        >
+          <el-carousel-item v-for="(item, i) in highlights" :key="item.title">
+            <article class="slide">
+              <div class="slide-main">
+                <span class="slide-index">{{ String(i + 1).padStart(2, '0') }}</span>
+                <div class="slide-icon"><el-icon :size="30"><component :is="item.icon" /></el-icon></div>
+                <h3 class="slide-title">{{ item.title }}</h3>
+                <p class="slide-desc">{{ item.desc }}</p>
+                <ul class="slide-points">
+                  <li v-for="p in item.points" :key="p"><span class="dot"></span>{{ p }}</li>
+                </ul>
+              </div>
+              <div class="slide-visual" aria-hidden="true">
+                <div class="orb orb-a"></div>
+                <div class="orb orb-b"></div>
+                <div class="visual-card">
+                  <el-icon :size="48"><component :is="item.icon" /></el-icon>
+                </div>
+              </div>
+            </article>
+          </el-carousel-item>
+        </el-carousel>
+      </section>
+
       <!-- 平台模块:非均质 bento -->
       <section id="features" class="features">
         <div class="section-head">
@@ -120,9 +159,53 @@
 
 <script setup>
 import { useRouter } from 'vue-router'
-import { Bell, Document, Reading, Right, User } from '@element-plus/icons-vue'
+import {
+  Bell, Connection, Collection, EditPen, ChatLineSquare, Files,
+  Document, Reading, Right, User
+} from '@element-plus/icons-vue'
 
 const router = useRouter()
+
+// 首页自动轮换的平台特点介绍
+const highlights = [
+  {
+    icon: Connection,
+    title: '可溯源的 AI 回答',
+    desc: '基于你的资料多轮对话，每个结论都附带 [1][2] 引用，点击即可定位教材原文，从根本上抑制凭空编造。',
+    points: ['引用原文', '一键溯源', '防幻觉生成']
+  },
+  {
+    icon: Collection,
+    title: '个人知识库自由构建',
+    desc: '上传 PDF / Word / PPT / TXT，按学科 → 课程 → 章节 → 知识点四级整理，扫描件自动 OCR 解析分块入库。',
+    points: ['四级分类', '扫描件 OCR', '可见性管理']
+  },
+  {
+    icon: Bell,
+    title: '每日知识资讯',
+    desc: '系统每日 9:00 自动抓取公开资讯源（知乎日报 / 少数派 / 36氪 等），强制标注来源，游客也能免费阅读。',
+    points: ['定时抓取', '来源标注', '无需登录']
+  },
+  {
+    icon: EditPen,
+    title: '学练测一体',
+    desc: '依据教材自动出题、限时模拟作答，客观题自动判分 + 主观题 AI 评分并附评语，错题自动归入错题本。',
+    points: ['自动出题', 'AI 评分', '错题本']
+  },
+  {
+    icon: ChatLineSquare,
+    title: '学习社区互助',
+    desc: '围绕课程与知识点发起提问、分享笔记，回答可被采纳为最佳答案，在同伴互助中把知识学得更扎实。',
+    points: ['问答采纳', '笔记分享', '同伴互助']
+  },
+  {
+    icon: Files,
+    title: '项目全程陪跑',
+    desc: 'AI 拆解需求 → 技术方案 → 任务清单 → 阶段计划 → 报告框架，每一步产出都沉淀为可复用的项目档案。',
+    points: ['需求拆解', '任务清单', '成果档案']
+  }
+]
+
 const steps = [
   { title: '建立专属资料库', description: '上传教材与笔记，按你的课程结构归类。' },
   { title: '获取有依据的帮助', description: '向 AI 提问，快速定位资料中的关键内容。' },
@@ -291,6 +374,100 @@ const goExplore = () => router.push('/explore')
   to { opacity: 1; transform: none; }
 }
 
+/* ========== 平台特点轮播 ========== */
+.showcase {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 12px 28px 72px;
+}
+.feature-carousel { margin-top: 36px; }
+.feature-carousel :deep(.el-carousel__container) { height: 320px; }
+.feature-carousel :deep(.el-carousel__item) {
+  border-radius: var(--radius-card);
+}
+.slide {
+  height: 100%;
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 36px;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  padding: 36px 40px;
+  overflow: hidden;
+}
+.slide-index {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .14em;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.slide-icon {
+  width: 58px;
+  height: 58px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: var(--accent-wash);
+  color: var(--accent-strong);
+  margin: 14px 0 18px;
+}
+.slide-title { margin: 0 0 10px; font-size: 22px; color: var(--paper); }
+.slide-desc { margin: 0; color: var(--ink-2); line-height: 1.85; font-size: 14.5px; }
+.slide-points { list-style: none; display: flex; flex-wrap: wrap; gap: 10px; padding: 0; margin: 20px 0 0; }
+.slide-points li {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12.5px;
+  color: var(--accent-strong);
+  background: var(--accent-wash);
+  border: 1px solid var(--accent-wash-2);
+  border-radius: 999px;
+  padding: 5px 13px;
+}
+.slide-points .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); }
+.slide-visual {
+  position: relative;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, var(--accent-wash), #ffffff);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+}
+.visual-card {
+  position: relative;
+  z-index: 2;
+  width: 120px;
+  height: 120px;
+  border-radius: 26px;
+  display: grid;
+  place-items: center;
+  background: var(--surface);
+  color: var(--accent-strong);
+  box-shadow: var(--shadow-pop);
+  border: 1px solid var(--accent-wash-2);
+}
+.orb { position: absolute; border-radius: 50%; opacity: .5; }
+.orb-a { width: 160px; height: 160px; right: -40px; top: -40px; background: var(--accent-wash-2); }
+.orb-b { width: 120px; height: 120px; left: -30px; bottom: -30px; background: var(--accent-line); opacity: .35; }
+
+/* 轮播指示器 / 箭头 融入淡雅主题 */
+.feature-carousel :deep(.el-carousel__indicators) { padding-bottom: 4px; }
+.feature-carousel :deep(.el-carousel__button) { background: var(--accent-line); opacity: .6; border-radius: 999px; }
+.feature-carousel :deep(.el-carousel__indicator.is-active .el-carousel__button) { background: var(--accent); opacity: 1; }
+.feature-carousel :deep(.el-carousel__arrow) {
+  background: var(--surface);
+  color: var(--accent-strong);
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--line);
+}
+.feature-carousel :deep(.el-carousel__arrow:hover) { background: var(--accent-wash); color: var(--accent-strong); }
+
 /* ========== 平台模块 bento ========== */
 .features {
   border-top: 1px solid var(--line);
@@ -330,9 +507,9 @@ const goExplore = () => router.push('/explore')
 .mini-cites { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; padding-top: 18px; }
 .cell-tint { background: var(--accent-wash); border-color: var(--accent-wash-2); }
 .cell-tint h3 { color: var(--accent-strong); }
-.cell-dark { background: #141d30; border-color: #141d30; }
+.cell-dark { background: #28413f; border-color: #28413f; }
 .cell-dark h3 { color: #fff; }
-.cell-dark p { color: #aeb9d2; }
+.cell-dark p { color: #bccdc9; }
 .cell-band {
   grid-column: span 3;
   display: flex;
@@ -411,6 +588,9 @@ footer .footer-note { margin-top: 8px; font-size: 12px; opacity: .85; }
   .bento { grid-template-columns: repeat(2, 1fr); }
   .cell-wide { grid-column: span 2; }
   .path-steps { grid-template-columns: 1fr; gap: 30px; }
+  .feature-carousel :deep(.el-carousel__container) { height: 440px !important; }
+  .slide { grid-template-columns: 1fr; padding: 28px 24px; gap: 22px; }
+  .slide-visual { min-height: 130px; }
 }
 @media (max-width: 640px) {
   .topbar { padding: 0 18px; }
