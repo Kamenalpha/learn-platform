@@ -47,6 +47,7 @@ RAG/
 │       ├── service/        # 各模块业务 + rag/(解析/分块/入库/问答/OCR)
 │       ├── entity/ mapper/ dto/
 ├── frontend/               # Vue3 前端(views/ 下为各模块页面)
+├── rag-python/             # 检索模块参考实现(LangChain / LlamaIndex 双框架对比,不替代生产)
 ├── sql/init_learning.sql   # 新库 learn_platform 建表(34 张表)
 ├── docs/                   # 前端原型设计、用例图等设计文档
 ├── 项目规范.md            # 项目约束(工作流/分支管理/提交规范)
